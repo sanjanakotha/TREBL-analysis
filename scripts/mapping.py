@@ -34,32 +34,6 @@ class BarcodeMapper:
     """
 
     def __init__(self, seq_file, design_file_path, bc_names, preceders, posts, lengths, reverse_complement):
-        """
-        Initializes the BarcodeMapper with input files, barcode specifications, and options.
-
-        Args:
-            seq_file (str): Path to the input FASTQ or sequence file.
-            design_file_path (str): Path to the CSV file containing designed sequences.
-            bc_names (list of str): Names of barcodes to extract.
-            preceders (list of str): Preceding sequences for barcode extraction.
-            posts (list of str): Following sequences for barcode extraction.
-            lengths (list of int): Lengths of barcodes to extract.
-            reverse_complement (bool): Whether to reverse complement sequences.
-
-        Raises:
-            ValueError: If lengths of bc_names, preceders, posts, and lengths do not match.
-
-        Example:
-            >>> mapper = BarcodeMapper(
-            ...     seq_file="reads.fastq",
-            ...     design_file_path="design.csv",
-            ...     bc_names=["AD"],
-            ...     preceders=["AAA"],
-            ...     posts=["CCC"],
-            ...     lengths=[20],
-            ...     reverse_complement=False
-            ... )
-        """
         self.seq_file = seq_file
         self.design_file_path = design_file_path
         self.bc_names = bc_names
