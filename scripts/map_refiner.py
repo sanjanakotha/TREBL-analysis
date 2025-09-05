@@ -10,8 +10,8 @@ class MapRefiner:
         cols (list[str]): List of barcode or tile column names to process. At least one must be "AD".
         reads_threshold (int): Minimum reads threshold for filtering map4.
         column_pairs (list[tuple]): List of (key_cols, target_cols) for enforcing each target maps to one key.
-            - key_cols (str or tuple): Column(s) forming the key.
-            - target_cols (str or tuple): Column(s) forming the target.
+        key_cols (str or tuple): Column(s) forming the key.
+        target_cols (str or tuple): Column(s) forming the target.
 
     Example:
         >>> refiner = MapRefiner(
