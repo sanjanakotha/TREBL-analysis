@@ -1,0 +1,12 @@
+sphinx
+sphinx-rtd-theme
+pandas
+duckdb
+dask
+biopython
+numpy
+torch
+torchvision
+torchmetrics
+tensorflow
+pytorch-lightning
