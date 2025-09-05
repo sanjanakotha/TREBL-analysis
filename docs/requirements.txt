@@ -3,5 +3,5 @@ dask
 duckdb
 biopython
 sphinx
-sphinx_book_theme
+furo
 pyarrow

@@ -9,7 +9,7 @@ class BarcodeMapper:
     """
     A class to extract and map barcodes from DNA sequences in FASTQ or CSV files.
 
-    Attributes:
+    Args:
         seq_file (str): Path to the input FASTQ or sequence file.
         design_file_path (str): Path to the CSV file containing designed sequences.
         bc_names (list of str): Names of barcodes to extract. 
