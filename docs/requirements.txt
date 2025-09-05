@@ -3,4 +3,5 @@ dask
 duckdb
 biopython
 sphinx
-sphinx-rtd-theme
+sphinx_book_theme
+pyarrow
