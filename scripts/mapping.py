@@ -17,9 +17,6 @@ class BarcodeMapper:
         posts (list of str): Following sequences used for barcode extraction.
         lengths (list of int): Lengths of each barcode to extract.
         reverse_complement (bool): Whether to reverse complement sequences before mapping.
-        seq_df (dask.DataFrame or None): DataFrame storing sequences.
-        mapped_df (dask.DataFrame or None): DataFrame storing barcodes mapped to design file.
-
     Example:
         >>> mapper = BarcodeMapper(
         ...     seq_file="reads.fastq",
