@@ -3,12 +3,17 @@ TREBL-scripts Documentation
 
 Welcome to TREBL-scripts's documentation.
 
+Workflow:
+--------
+1. Use the :mod:`mapping` module to generate a preliminary map.
+2. Use the :mod:`map_refiner` module to filter the map.
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   map_refiner
    mapping
+   map_refiner
 
 Indices and tables
 ==================
