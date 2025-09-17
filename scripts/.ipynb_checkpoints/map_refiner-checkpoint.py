@@ -16,26 +16,28 @@ class MapRefiner:
         cols (list[str]): List of barcode or tile column names to process. At least one must be "AD".
         reads_threshold (int): Minimum reads threshold for filtering map5_thresholded.
         column_pairs (list[tuple]): List of (key_cols, target_cols) for enforcing each target maps to one key.
-        key_cols (str or tuple): Column(s) forming the key.
-        target_cols (str or tuple): Column(s) forming the target.
+        design_check (bool, optional): Whether to filter out non-designed sequences based on the 'Designed' column.
+                                       Defaults to True (keep only Designed sequences).
 
     Example:
         >>> refiner = MapRefiner(
         ...     db_path="my_database.duckdb",
         ...     cols=["AD", "AD_BC", "RP_BC"],
         ...     reads_threshold=5,
-        ...     column_pairs=[("AD", "RP_BC"), (("HawkBCs", "AD_BC"), "RP_BC")]
+        ...     column_pairs=[("AD", "RP_BC"), (("HawkBCs", "AD_BC"), "RP_BC")],
+        ...     design_check=False
         ... )
         >>> refiner.create_map1_initial("reads.parquet")
-        >>> refiner.create_map1_initial("folder/*.parquet")
+        >>> refiner.refine_map_from_parquet("reads.parquet")
     """
 
-    def __init__(self, db_path, cols, reads_threshold, column_pairs):
+    def __init__(self, db_path, cols, reads_threshold, column_pairs, design_check=True):
         self.db_path = db_path
         self.con = duckdb.connect(self.db_path)
         self.cols = cols
         self.reads_threshold = reads_threshold
         self.column_pairs = column_pairs
+        self.design_check = design_check
 
     def create_map1_initial(self, parquet_path):
         """
@@ -54,26 +56,34 @@ class MapRefiner:
             FROM read_parquet('{parquet_path}')
         """)
 
+
     def create_map2_quality_designed(self):
         """
-        Remove low-quality or non-designed rows from map1_initial to create map2_quality_designed.
+        Remove low-quality or optionally non-designed rows from map1_initial 
+        to create map2_quality_designed.
 
         Specifically:
-            1. Removes low-quality barcodes or tiles.
-            2. Removes non-designed tiles.
+            1. Removes low-quality barcodes or tiles (based on *_qual columns).
+            2. Optionally removes non-designed sequences if design_check=True.
 
         Example:
+            >>> refiner = MapRefiner(..., design_check=False)
             >>> refiner.create_map2_quality_designed()
         """
         cols_to_keep = ", ".join(self.cols)
         where_clause = " AND ".join([f"{c}_qual NOT IN (0, FALSE)" for c in self.cols])
+
+        if self.design_check:
+            designed_filter = "AND Designed NOT IN (0, FALSE)"
+        else:
+            designed_filter = ""
 
         self.con.execute(f"""
             CREATE OR REPLACE TABLE map2_quality_designed AS
             SELECT {cols_to_keep}
             FROM map1_initial
             WHERE {where_clause}
-            AND Designed NOT IN (0, FALSE)
+            {designed_filter}
         """)
 
     def create_map3_grouped(self):
