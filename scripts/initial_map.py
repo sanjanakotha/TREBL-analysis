@@ -111,28 +111,5 @@ class BarcodeMapper:
     
         return self.mapped_df
 
-    def save_parquet(self, path):
-        """
-        Saves the mapped barcode DataFrame to a Parquet file with a progress bar.
-
-        Args:
-            path (str): Path to save the Parquet file.
-
-        Returns:
-            None
-
-        Example:
-            >>> mapper = BarcodeMapper(...initialize...)
-            >>> mapper.create_map()
-            >>> mapper.save_parquet("mapped_barcodes.parquet")
-        """
-        if os.path.exists(path):
-            print(f"Warning: The path '{path}' already exists and will be added to.")
-
-        with ProgressBar():
-            self.mapped_df.to_parquet(
-                path,
-                engine='pyarrow',
-                write_index=False
-            )
+    
 

@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 def load_and_shorten_files(seq_files, reverse_complement, txt_path="reads_shortened.txt"):
     """
-    Load sequence files (FASTQ, gzipped FASTQ, or TXT) and shorten FASTQ files if needed.
+    Load sequence files (FASTQ, gzipped FASTQ, or TXT) as dask dataframe and shorten FASTQ files if needed.
     
     Args:
         seq_files (list of str): List of file paths.
@@ -106,3 +106,28 @@ def shorten_seq_file(infile, outfile):
         for i, line in enumerate(fin):
             if i % 4 == 1:  # 2nd line of each FASTQ record
                 fout.write(line)
+
+def save_parquet(df, path):
+    """
+    Saves the mapped barcode DataFrame to a Parquet file with a progress bar.
+
+    Args:
+        path (str): Path to save the Parquet file.
+
+    Returns:
+        None
+
+    Example:
+        >>> mapper = BarcodeMapper(...initialize...)
+        >>> mapper.create_map()
+        >>> mapper.save_parquet("mapped_barcodes.parquet")
+    """
+    if os.path.exists(path):
+        print(f"Warning: The path '{path}' already exists and will be added to.")
+
+    with ProgressBar():
+        df.to_parquet(
+            path,
+            engine='pyarrow',
+            write_index=False
+        )
