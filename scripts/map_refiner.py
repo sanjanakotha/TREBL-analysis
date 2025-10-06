@@ -6,6 +6,7 @@ sns.set(style="white", context="talk")
 from tqdm import tqdm
 import warnings
 warnings.filterwarnings("ignore")
+import matplotlib.cm as cm
 
 class MapRefiner:
     """
@@ -27,11 +28,27 @@ class MapRefiner:
         ...     column_pairs=[("AD", "RP_BC"), (("HawkBCs", "AD_BC"), "RP_BC")],
         ...     design_check=False
         ... )
-        >>> refiner.create_map1_initial("reads.parquet")
+        >>> refiner.create_initial("reads.parquet")
         >>> refiner.refine_map_from_parquet("reads.parquet")
     """
 
-    def __init__(self, db_path, cols, reads_threshold, column_pairs, design_check=True):
+    # def __init__(self, db_path, cols, reads_threshold, column_pairs, design_check=True):
+    #     self.db_path = db_path
+    #     self.con = duckdb.connect(self.db_path)
+    #     self.cols = cols
+    #     self.reads_threshold = reads_threshold
+    #     self.column_pairs = column_pairs
+    #     self.design_check = design_check
+
+    DEFAULT_MAP_ORDER = [
+        "initial",
+        "grouped",
+        "thresholded",
+        "unique_target",
+        "quality_designed"
+    ]
+
+    def __init__(self, db_path, cols, reads_threshold, column_pairs, design_check=True, map_order=None):
         self.db_path = db_path
         self.con = duckdb.connect(self.db_path)
         self.cols = cols
@@ -39,28 +56,54 @@ class MapRefiner:
         self.column_pairs = column_pairs
         self.design_check = design_check
 
-    def create_map1_initial(self, parquet_path):
+        # Use provided map_order or prompt the user
+        if map_order is not None:
+            self.map_order = map_order
+        else:
+            # Prompt user for map order
+            print("Default map order:")
+            for i, name in enumerate(self.DEFAULT_MAP_ORDER, 1):
+                print(f"{i}. {name}")
+
+            user_input = input(
+                "Enter map order by numbers, comma-separated (e.g., 1,3,2,5,4), or press Enter for default: "
+            )
+
+            if user_input.strip() == "":
+                self.map_order = self.DEFAULT_MAP_ORDER
+            else:
+                try:
+                    indices = [int(x.strip()) - 1 for x in user_input.split(",")]
+                    self.map_order = [self.DEFAULT_MAP_ORDER[i] for i in indices]
+                except Exception:
+                    print("Invalid input, using default order.")
+                    self.map_order = self.DEFAULT_MAP_ORDER
+
+        print("Using map order:", self.map_order)
+
+
+    def create_initial(self, parquet_path):
         """
-        Load raw sequencing data from Parquet file or pattern into map1_initial.
+        Load raw sequencing data from Parquet file or pattern into initial.
 
         Args:
             parquet_path (str): Path to input Parquet file(s).
 
         Example:
-            >>> refiner.create_map1_initial("reads.parquet")
-            >>> refiner.create_map1_initial("folder/*.parquet")
+            >>> refiner.create_initial("reads.parquet")
+            >>> refiner.create_initial("folder/*.parquet")
         """
         self.con.execute(f"""
-            CREATE OR REPLACE TABLE map1_initial AS
+            CREATE OR REPLACE TABLE initial AS
             SELECT *
             FROM read_parquet('{parquet_path}')
         """)
 
 
-    def create_map2_quality_designed(self):
+    def create_quality_designed(self, previous_table = "initial"):
         """
-        Remove low-quality or optionally non-designed rows from map1_initial 
-        to create map2_quality_designed.
+        Remove low-quality or optionally non-designed rows from previous table 
+        to create quality_designed.
 
         Specifically:
             1. Removes low-quality barcodes or tiles (based on *_qual columns).
@@ -68,9 +111,9 @@ class MapRefiner:
 
         Example:
             >>> refiner = MapRefiner(..., design_check=False)
-            >>> refiner.create_map2_quality_designed()
+            >>> refiner.create_quality_designed()
         """
-        cols_to_keep = ", ".join(self.cols)
+        #cols_to_keep = ", ".join(self.cols)
         where_clause = " AND ".join([f"{c}_qual NOT IN (0, FALSE)" for c in self.cols])
 
         if self.design_check:
@@ -79,44 +122,49 @@ class MapRefiner:
             designed_filter = ""
 
         self.con.execute(f"""
-            CREATE OR REPLACE TABLE map2_quality_designed AS
-            SELECT {cols_to_keep}
-            FROM map1_initial
+            CREATE OR REPLACE TABLE quality_designed AS
+            SELECT *
+            FROM {previous_table}
             WHERE {where_clause}
             {designed_filter}
         """)
 
-    def create_map3_grouped(self):
+    def create_grouped(self, previous_table="quality_designed"):
         """
-        Group map2_quality_designed by barcode/tile columns and count occurrences to create map3_grouped.
+        Group by AD + barcode/tile columns, keep count, barcode _qual columns, and Designed.
+        """
+        # barcode columns are all cols except 'AD'
+        qual_cols = [f"{c}_qual" for c in self.cols]
 
-        Example:
-            >>> refiner.create_map3_grouped()
-        """
+        # select columns: group columns + count + barcode_quals + Designed
         group_cols_sql = ", ".join(self.cols)
+        qual_cols_sql = ", ".join(qual_cols + ["Designed"])
 
         self.con.execute(f"""
-            CREATE OR REPLACE TABLE map3_grouped AS
-            SELECT {group_cols_sql}, COUNT(*) AS count
-            FROM map2_quality_designed
-            GROUP BY {group_cols_sql}
+            CREATE OR REPLACE TABLE grouped AS
+            SELECT {group_cols_sql},
+                COUNT(*) AS count,
+                {qual_cols_sql}
+            FROM {previous_table}
+            GROUP BY {group_cols_sql}, {qual_cols_sql}
             ORDER BY count DESC
         """)
 
-    def create_map4_thresholded(self):
+
+    def create_thresholded(self, previous_table = "grouped"):
         """
-        Filter map3_grouped by read count threshold to create map5_thresholded.
+        Filter grouped by read count threshold to create map5_thresholded.
     
         This now happens BEFORE enforcing unique target constraints.
         """
         self.con.execute(f"""
-            CREATE OR REPLACE TABLE map4_thresholded AS
+            CREATE OR REPLACE TABLE thresholded AS
             SELECT *
-            FROM map3_grouped
+            FROM {previous_table}
             WHERE count > {self.reads_threshold}
         """)
     
-    def create_map5_unique_target(self):
+    def create_unique_target(self, previous_table = "thresholded"):
         """
         Enforce mapping constraints from column_pairs on map5_thresholded to create map4_unique_target.
     
@@ -126,7 +174,6 @@ class MapRefiner:
         Example:
             >>> refiner.create_map4_unique_target()
         """
-        current_table = "map4_thresholded"  # <-- now start from thresholded table
     
         for i, (key_cols, target_cols) in enumerate(self.column_pairs):
             tmp_table = f"tmp_map4_{i}"
@@ -144,57 +191,71 @@ class MapRefiner:
             self.con.execute(f"""
                 CREATE OR REPLACE TABLE {tmp_table} AS
                 SELECT *
-                FROM {current_table}
+                FROM {previous_table}
                 WHERE {target_expr} IN (
                     SELECT {target_expr}
-                    FROM {current_table}
+                    FROM {previous_table}
                     GROUP BY {target_expr}
                     HAVING COUNT(DISTINCT {key_expr}) = 1
                 )
             """)
-            current_table = tmp_table
+            previous_table = tmp_table
     
-        self.con.execute(f"CREATE OR REPLACE TABLE map5_unique_target AS SELECT * FROM {current_table}")
+        self.con.execute(f"CREATE OR REPLACE TABLE unique_target AS SELECT * FROM {previous_table}")
 
 
     def refine_map_from_parquet(self, parquet_path):
         """
-        Run the full map refinement pipeline starting from Parquet data.
-    
-        Args:
-            parquet_path (str): Path to input Parquet file(s).
-    
-        Example:
-            >>> refiner.refine_map_from_parquet("reads.parquet")
-            >>> refiner.refine_map_from_parquet("folder/*.parquet")
+        Run the full map refinement pipeline starting from Parquet data,
+        using self.map_order to determine which steps to run.
         """
-        steps = [
-            (self.create_map1_initial, "Creating initial map"),
-            (self.create_map2_quality_designed, "Refining quality and design"),
-            (self.create_map3_grouped, "Grouping map3"),
-            (self.create_map4_thresholded, "Applying threshold to map4"),
-            (self.create_map5_unique_target, "Creating unique target map5"),
-        ]
-    
-        for func, desc in tqdm(steps, desc="Refining maps", unit="step"):
-            func(parquet_path) if func.__name__ == "create_map1_initial" else func()
+        # Map table names to functions
+        table_to_func = {
+            "initial": self.create_initial,
+            "quality_designed": self.create_quality_designed,
+            "grouped": self.create_grouped,
+            "thresholded": self.create_thresholded,
+            "unique_target": self.create_unique_target
+        }
+
+        prev_table = None
+
+        for table_name in self.map_order:
+            func = table_to_func.get(table_name)
+            if func is None:
+                continue
+
+            # create_initial needs parquet_path, others take previous_table
+            if table_name == "initial":
+                func(parquet_path)
+                prev_table = "initial"
+            else:
+                func(previous_table=prev_table)
+                prev_table = table_name
 
     def refine_map_from_db(self):
         """
-        Run the map refinement pipeline assuming map1_initial already exists in the database.
-    
-        Example:
-            >>> refiner.refine_map_from_db()
+        Run the map refinement pipeline assuming initial already exists in the database,
+        using self.map_order to determine which steps to run.
         """
-        steps = [
-            (self.create_map2_quality_designed, "Refining quality and design"),
-            (self.create_map3_grouped, "Grouping map3"),
-            (self.create_map4_thresholded, "Applying threshold to map4"),
-            (self.create_map5_unique_target, "Creating unique target map5"),
-        ]
-    
-        for func, desc in tqdm(steps, desc="Refining maps from DB", unit="step"):
-            func()
+        # Map table names to functions
+        table_to_func = {
+            "initial": None,  # Already exists
+            "quality_designed": self.create_quality_designed,
+            "grouped": self.create_grouped,
+            "thresholded": self.create_thresholded,
+            "unique_target": self.create_unique_target
+        }
+
+        # Keep track of the previous table
+        prev_table = "initial"
+
+        for table_name in self.map_order:
+            func = table_to_func.get(table_name)
+            if func is not None:
+                func(previous_table=prev_table)
+            prev_table = table_name  # Update previous table for next iteration
+
 
     def save_map(self, map_name, map_path):
         """
@@ -209,7 +270,7 @@ class MapRefiner:
         """
         self.con.execute(f"COPY {map_name} TO '{map_path}' WITH (HEADER, DELIMITER ',')")
 
-    def save_loss_table(self, output_csv_path=False):
+    def save_loss_table(self,output_csv_path=False):
         """
         Save a loss table summarizing row counts at each pipeline step (map1 -> map5)
         with descriptive labels and percentages.
@@ -228,29 +289,30 @@ class MapRefiner:
             >>> df = refiner.save_loss_table("map_lengths.csv")
             >>> print(df)
         """
-
-        map_info = [
-            ("map1_initial", "Initial combinations"),
-            ("map2_quality_designed", "After removing low quality and undesigned"),
-            ("map3_grouped", "Grouped counts"),
-            ("map4_thresholded", f"Filtered by reads_threshold > {self.reads_threshold}"),
-            ("map5_unique_target", "Filtered for unique targets")
-        ]
+        map_info_dict = {
+            "initial": "Initial combinations",
+            "quality_designed": "After removing low quality and undesigned",
+            "grouped": "Grouped counts",
+            "thresholded": f"Filtered by reads_threshold > {self.reads_threshold}",
+            "unique_target": "Filtered for unique targets"
+        }
 
         lengths = []
         existing_tables = [t[0] for t in self.con.execute("SHOW TABLES").fetchall()]
 
-        for table_name, description in map_info:
+        for table_name in self.map_order:
             if table_name in existing_tables:
                 count = self.con.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
             else:
                 count = None
+
+            description = map_info_dict[table_name]
             lengths.append({"map": table_name, "description": description, "num_rows": count})
 
         df = pd.DataFrame(lengths)
 
         prev_count = None
-        map1_count = df.loc[df['map'] == 'map1_initial', 'num_rows'].values[0]
+        map1_count = df.loc[df['map'] == 'initial', 'num_rows'].values[0]
         percent_prev = []
         percent_map1 = []
 
@@ -281,8 +343,8 @@ class MapRefiner:
         Args:
             map_name (str): Name of the map table to fetch.
                             Should be one of:
-                            'map1_initial', 'map2_quality_designed',
-                            'map3_grouped', 'map4_unique_target',
+                            'initial', 'quality_designed',
+                            'grouped', 'map4_unique_target',
                             'map5_thresholded'
     
         Returns:
@@ -297,57 +359,58 @@ class MapRefiner:
         df = self.con.execute(f"SELECT * FROM {map_name}").df()
         return df
         
-    def plot_loss(self, save_path=None, ax=None):
+
+    def plot_loss(self, save_path=None, ax=None, palette = "rocket_r"):
         """
         Display a horizontal bar plot of the pipeline loss table (map1 -> map5).
-    
+
         Args:
             save_path (str, optional): File path to save the figure. If None, figure is not saved.
             ax (matplotlib.axes.Axes, optional): Existing matplotlib axis to plot on. 
-                                                 If None, a new figure and axis are created.
-    
+                                                If None, a new figure and axis are created.
+
         Returns:
             matplotlib.axes.Axes: The axis containing the plot.
         """
         df = self.save_loss_table()    
-    
+
         # Set style and create figure if not provided
         if ax is None:
             sns.set(style="white", context='talk')
             fig, ax = plt.subplots(figsize=(6,4), dpi=300)
-    
+
+        # Create  palette for DEFAULT_MAP_ORDER
+        cmap = sns.color_palette(palette, n_colors=len(self.DEFAULT_MAP_ORDER))
+        palette = {name: cmap[i] for i, name in enumerate(self.DEFAULT_MAP_ORDER)}
+        colors = [palette.get(name, (0.5,0.5,0.5)) for name in df['map']]
+
         # Horizontal bar plot: swap x and y
-        sns.barplot(x="num_rows", y="description", data=df, ax=ax, color="skyblue")
-    
-        # Format y-axis labels: split by "_" and "combinations", add line breaks
+        sns.barplot(x="num_rows", y="description", data=df, ax=ax, palette=colors)
+
+        # Format y-axis labels
         ax.set_yticklabels(
-            df["map"]
-            .str.split("_")
-            .str[1:]
-            .str.join(" ")
-            .str.split(" combinations")
-            .str[0]
-            .str.replace(" ", "\n")
+            df["map"],
         )
-    
+
         # Add labels at the end of bars
         max_rows = df["num_rows"].max()
         for i, row in df.iterrows():
             x = row["num_rows"]
             ax.text(x, i, f'{row["num_rows"]:,}', va='center', ha='left', fontsize='small')
-    
+
         # Axis labels
         ax.set_xlabel("Row Count")
         ax.set_ylabel("Map Step")
         
-        sns.despine(bottom = True)
+        sns.despine(bottom=True)
         ax.set_xticks([])
-    
+
         # Optionally save figure
         if save_path:
             ax.get_figure().savefig(save_path, bbox_inches='tight')
-    
+
         return ax
+
 
     def plot_map4_reads(self, save_path=None, ax=None):
         """
@@ -388,7 +451,7 @@ class MapRefiner:
             label (str, optional): Label for legend. Defaults to None.
     
         Example:
-            >>> fig, axs = refiner.plot_map_histograms("map3_grouped")
+            >>> fig, axs = refiner.plot_map_histograms("grouped")
             >>> refiner._plot_histograms_for_map(map_df, axs, color='blue', label='Map3')
         """
         bc_cols = [c for c in self.cols if c != 'AD']
@@ -438,7 +501,7 @@ class MapRefiner:
                 axs (list of matplotlib.axes.Axes): Axes for each subplot.
     
         Example:
-            >>> fig, axs = refiner.plot_map_histograms("map3_grouped")
+            >>> fig, axs = refiner.plot_map_histograms("grouped")
             >>> fig.show()
             >>> refiner.plot_map_histograms("map4_unique_target", save="map4.png")
         """
@@ -455,7 +518,7 @@ class MapRefiner:
     
         # Map description for legend
         map_descriptions = {
-            "map3_grouped": "Grouped",
+            "grouped": "Grouped",
             "map4_unique_target": "Unique targets",
             "map5_thresholded": "Thresholded"
         }
@@ -504,13 +567,13 @@ class MapRefiner:
             >>> refiner.plot_maps_3to5_histograms(save="map_overlay.png") #To save
         """
         maps = {
-            "map3_grouped": "Map3",
+            "grouped": "Map3",
             "map4_unique_target": "Map4",
             "map5_thresholded": "Map5"
         }
         colors = sns.color_palette("colorblind", n_colors=len(maps))
         map_descriptions = {
-            "map3_grouped": "Grouped",
+            "grouped": "Grouped",
             "map4_unique_target": "Unique targets",
             "map5_thresholded": "Thresholded"
         }
