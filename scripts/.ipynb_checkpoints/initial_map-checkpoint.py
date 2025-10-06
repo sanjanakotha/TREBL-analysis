@@ -73,7 +73,7 @@ class BarcodeMapper:
             >>> df_checked = mapper.check_designed(mapper.seq_df)
         """
         if self.design_file_path is None:
-            map_df["Designed"] = 0
+            map_df["Designed"] = 1
             return map_df
             
         design_file = dd.read_csv(self.design_file_path, header=None, names=["AD"], dtype=str)

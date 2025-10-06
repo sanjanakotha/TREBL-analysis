@@ -103,31 +103,44 @@ class MapRefiner:
             ORDER BY count DESC
         """)
 
-    def create_map4_unique_target(self):
+    def create_map4_thresholded(self):
         """
-        Enforce mapping constraints from column_pairs on map3_grouped to create map4_unique_target.
-
+        Filter map3_grouped by read count threshold to create map5_thresholded.
+    
+        This now happens BEFORE enforcing unique target constraints.
+        """
+        self.con.execute(f"""
+            CREATE OR REPLACE TABLE map4_thresholded AS
+            SELECT *
+            FROM map3_grouped
+            WHERE count > {self.reads_threshold}
+        """)
+    
+    def create_map5_unique_target(self):
+        """
+        Enforce mapping constraints from column_pairs on map5_thresholded to create map4_unique_target.
+    
         Each target combination should map to exactly one key combination.
         Supports single-column or multi-column keys and targets.
-
+    
         Example:
             >>> refiner.create_map4_unique_target()
         """
-        current_table = "map3_grouped"
-
+        current_table = "map4_thresholded"  # <-- now start from thresholded table
+    
         for i, (key_cols, target_cols) in enumerate(self.column_pairs):
             tmp_table = f"tmp_map4_{i}"
-
+    
             if isinstance(key_cols, str):
                 key_expr = f"CAST({key_cols} AS VARCHAR)"
             else:
                 key_expr = " || '-' || ".join([f"CAST({c} AS VARCHAR)" for c in key_cols])
-
+    
             if isinstance(target_cols, str):
                 target_expr = f"CAST({target_cols} AS VARCHAR)"
             else:
                 target_expr = " || '-' || ".join([f"CAST({c} AS VARCHAR)" for c in target_cols])
-
+    
             self.con.execute(f"""
                 CREATE OR REPLACE TABLE {tmp_table} AS
                 SELECT *
@@ -140,22 +153,9 @@ class MapRefiner:
                 )
             """)
             current_table = tmp_table
+    
+        self.con.execute(f"CREATE OR REPLACE TABLE map5_unique_target AS SELECT * FROM {current_table}")
 
-        self.con.execute(f"CREATE OR REPLACE TABLE map4_unique_target AS SELECT * FROM {current_table}")
-
-    def create_map5_thresholded(self):
-        """
-        Filter map4_unique_target by read count threshold to create map5_thresholded.
-
-        Example:
-            >>> refiner.create_map5_thresholded()
-        """
-        self.con.execute(f"""
-            CREATE OR REPLACE TABLE map5_thresholded AS
-            SELECT *
-            FROM map4_unique_target
-            WHERE count > {self.reads_threshold}
-        """)
 
     def refine_map_from_parquet(self, parquet_path):
         """
@@ -172,8 +172,8 @@ class MapRefiner:
             (self.create_map1_initial, "Creating initial map"),
             (self.create_map2_quality_designed, "Refining quality and design"),
             (self.create_map3_grouped, "Grouping map3"),
-            (self.create_map4_unique_target, "Creating unique target map4"),
-            (self.create_map5_thresholded, "Applying threshold to map5"),
+            (self.create_map4_thresholded, "Applying threshold to map4"),
+            (self.create_map5_unique_target, "Creating unique target map5"),
         ]
     
         for func, desc in tqdm(steps, desc="Refining maps", unit="step"):
@@ -187,10 +187,10 @@ class MapRefiner:
             >>> refiner.refine_map_from_db()
         """
         steps = [
-            (self.create_map2_quality_designed, "Creating map2_quality_designed"),
-            (self.create_map3_grouped, "Creating map3_grouped"),
-            (self.create_map4_unique_target, "Creating map4_unique_target"),
-            (self.create_map5_thresholded, "Creating map5_thresholded"),
+            (self.create_map2_quality_designed, "Refining quality and design"),
+            (self.create_map3_grouped, "Grouping map3"),
+            (self.create_map4_thresholded, "Applying threshold to map4"),
+            (self.create_map5_unique_target, "Creating unique target map5"),
         ]
     
         for func, desc in tqdm(steps, desc="Refining maps from DB", unit="step"):
@@ -233,8 +233,8 @@ class MapRefiner:
             ("map1_initial", "Initial combinations"),
             ("map2_quality_designed", "After removing low quality and undesigned"),
             ("map3_grouped", "Grouped counts"),
-            ("map4_unique_target", "Filtered for unique targets"),
-            ("map5_thresholded", f"Filtered by reads_threshold > {self.reads_threshold}")
+            ("map4_thresholded", f"Filtered by reads_threshold > {self.reads_threshold}"),
+            ("map5_unique_target", "Filtered for unique targets")
         ]
 
         lengths = []
@@ -541,3 +541,14 @@ class MapRefiner:
             fig.savefig(path, dpi=300, bbox_inches="tight")
     
         return fig, axs
+
+    def close_connection(self):
+        """
+        Close the DuckDB connection to release the file lock.
+
+        Example:
+            >>> refiner.close_connection()
+        """
+        if self.con:
+            self.con.close()
+            self.con = None

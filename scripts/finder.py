@@ -25,7 +25,7 @@ def add_barcode(seq_df, bc_name, preceder, post, bc_length=120):
     regex = f"{preceder}(.*){post}"
     subseq_series = seq_df['sequence'].str.extract(regex)[0].str.slice(0, bc_length)
     seq_df[bc_name] = subseq_series
-    seq_df[bc_name + "_qual"] = seq_df[bc_name].str.len() == bc_length
+    seq_df[bc_name + "_qual"] = True #seq_df[bc_name].str.len() == bc_length
     seq_df[bc_name + "_qual"] = seq_df[bc_name + "_qual"].fillna(False)
     return seq_df
     
