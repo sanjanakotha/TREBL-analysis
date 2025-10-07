@@ -15,7 +15,7 @@ class MapRefiner:
     Args:
         db_path (str): Path for new or existing DuckDB database.
         cols (list[str]): List of barcode or tile column names to process. At least one must be "AD".
-        reads_threshold (int): Minimum reads threshold for filtering map5_thresholded.
+        self.reads_threshold (int): Minimum reads threshold for filtering map5_thresholded.
         column_pairs (list[tuple]): List of (key_cols, target_cols) for enforcing each target maps to one key.
         design_check (bool, optional): Whether to filter out non-designed sequences based on the 'Designed' column.
                                        Defaults to True (keep only Designed sequences).
@@ -24,7 +24,7 @@ class MapRefiner:
         >>> refiner = MapRefiner(
         ...     db_path="my_database.duckdb",
         ...     cols=["AD", "AD_BC", "RP_BC"],
-        ...     reads_threshold=5,
+        ...     self.reads_threshold=5,
         ...     column_pairs=[("AD", "RP_BC"), (("HawkBCs", "AD_BC"), "RP_BC")],
         ...     design_check=False
         ... )
@@ -32,11 +32,11 @@ class MapRefiner:
         >>> refiner.refine_map_from_parquet("reads.parquet")
     """
 
-    # def __init__(self, db_path, cols, reads_threshold, column_pairs, design_check=True):
+    # def __init__(self, db_path, cols, self.reads_threshold, column_pairs, design_check=True):
     #     self.db_path = db_path
     #     self.con = duckdb.connect(self.db_path)
     #     self.cols = cols
-    #     self.reads_threshold = reads_threshold
+    #     self.self.reads_threshold = self.reads_threshold
     #     self.column_pairs = column_pairs
     #     self.design_check = design_check
 
@@ -48,11 +48,10 @@ class MapRefiner:
         "quality_designed"
     ]
 
-    def __init__(self, db_path, cols, reads_threshold, column_pairs, design_check=True, map_order=None):
+    def __init__(self, db_path, cols, column_pairs, design_check=True, map_order=None):
         self.db_path = db_path
         self.con = duckdb.connect(self.db_path)
         self.cols = cols
-        self.reads_threshold = reads_threshold
         self.column_pairs = column_pairs
         self.design_check = design_check
 
@@ -157,6 +156,18 @@ class MapRefiner:
     
         This now happens BEFORE enforcing unique target constraints.
         """
+        self.plot_reads_histogram(previous_table=previous_table)
+        plt.show()
+
+        try:
+            user_input = input("Enter minimum read count threshold (default = 5): ")
+            self.reads_threshold = int(user_input) if user_input.strip() != "" else 5
+        except ValueError:
+            print("Invalid input. Using default threshold of 5.")
+            self.reads_threshold = 5
+
+        print("Using reads threshold of " + str(self.reads_threshold) + ".")
+
         self.con.execute(f"""
             CREATE OR REPLACE TABLE thresholded AS
             SELECT *
@@ -293,7 +304,7 @@ class MapRefiner:
             "initial": "Initial combinations",
             "quality_designed": "After removing low quality and undesigned",
             "grouped": "Grouped counts",
-            "thresholded": f"Filtered by reads_threshold > {self.reads_threshold}",
+            "thresholded": f"Filtered by # reads > {self.reads_threshold}",
             "unique_target": "Filtered for unique targets"
         }
 
@@ -411,6 +422,34 @@ class MapRefiner:
 
         return ax
 
+    def plot_reads_histogram(self, previous_table, save_path=None, ax=None):
+        """
+        Plot coverage (count distribution) per unique Tile/BC(s) combo in map4.
+    
+        Args:
+            save_path (str, optional): Path to save the figure. If None, figure is not saved.
+            ax (matplotlib.axes.Axes, optional): Existing axis to plot on. If None, a new figure is created.
+    
+        Returns:
+            matplotlib.axes.Axes: The axis containing the plot.
+        """
+        map_df = self.get_map_df(previous_table)
+        
+        # Create figure and axes if not provided
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(6, 4), dpi=300)
+        
+        sns.histplot(map_df["count"], bins=100, log_scale=(True, True), ax=ax)
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        sns.despine()
+
+        # Optionally save figure
+        if save_path:
+            ax.get_figure().savefig(save_path, bbox_inches="tight")
+    
+        return ax
+    
 
     def plot_map4_reads(self, save_path=None, ax=None):
         """
