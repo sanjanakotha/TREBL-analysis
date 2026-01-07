@@ -1,0 +1,16 @@
+Reading 1 FASTQ/TXT file(s)...
+Done in 9.06 minutes.
+
+Reverse complement of sequences...
+Done in 1.90 minutes.
+
+Extracting 3 barcodes...
+Done in 2.98 minutes.
+
+Extracting UMIs (0 bases)...
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 58.16 seconds.
+
+Mapping complete.

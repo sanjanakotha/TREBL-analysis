@@ -1,0 +1,87 @@
+Reading 1 FASTQ/TXT file(s)...
+Done in 8.53 minutes.
+
+Reverse complement of sequences...
+Done in 1.86 minutes.
+
+Extracting 3 barcodes...
+GGCTAGC(.*)TGACTAG
+CGCGCC(.*)GGGCCC
+CTCGAG(.*)GGCCGC
+Done in 2.56 minutes.
+
+Extracting UMIs (0 bases)...
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 35.48 seconds.
+
+Mapping complete.
+Reading 1 FASTQ/TXT file(s)...
+Done in 3.11 minutes.
+
+Reverse complement of sequences...
+Done in 43.69 seconds.
+
+Extracting 2 barcodes...
+GGCTAGC(.*)TGACTAG
+CGCGCC(.*)GGGCCC
+Done in 50.81 seconds.
+
+Extracting UMIs (0 bases)...
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 18.01 seconds.
+
+Mapping complete.
+Reading 1 FASTQ/TXT file(s)...
+Done in 2.88 minutes.
+
+Reverse complement of sequences...
+Done in 42.59 seconds.
+
+Extracting 1 barcodes...
+CTCGAG(.*)GGCCGC
+Done in 21.36 seconds.
+
+Extracting UMIs (0 bases)...
+Done in 0.00 seconds.
+
+Done in 11.34 seconds.
+
+Mapping complete.
+Reading 1 FASTQ/TXT file(s)...
+Done in 38.69 seconds.
+
+Reverse complement of sequences...
+Done in 13.10 seconds.
+
+Extracting 2 barcodes...
+GGCTAGC(.*)TGACTAG
+CGCGCC(.*)GGGCCC
+Done in 10.15 seconds.
+
+Extracting UMIs (0 bases)...
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 10.27 seconds.
+
+Mapping complete.
+Reading 1 FASTQ/TXT file(s)...
+Done in 28.35 seconds.
+
+Reverse complement of sequences...
+Done in 10.43 seconds.
+
+Extracting 1 barcodes...
+CTCGAG(.*)GGCCGC
+Done in 3.65 seconds.
+
+Extracting UMIs (0 bases)...
+Done in 0.00 seconds.
+
+Done in 4.84 seconds.
+
+Mapping complete.

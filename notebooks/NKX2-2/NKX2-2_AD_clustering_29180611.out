@@ -1,0 +1,8 @@
+Starting directional clustering...
+/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/notebooks/NKX2-2/UMI_Clusterer_NKX2-2.py:29: FutureWarning: DataFrame.applymap has been deprecated. Use DataFrame.map instead.
+  directional_clustered_ADs_df = directional_clustered_ADs_df.applymap(
+Done with directional clustering of ADs.
+Starting adjacency clustering...
+/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/notebooks/NKX2-2/UMI_Clusterer_NKX2-2.py:40: FutureWarning: DataFrame.applymap has been deprecated. Use DataFrame.map instead.
+  adjacency_clustered_ADs_df = adjacency_clustered_ADs_df.applymap(
+Done with adjacency clustering of ADs.

@@ -1,0 +1,30 @@
+First, with post
+Reading 1 FASTQ/TXT file(s)...
+Done in 3.77 minutes.
+
+Done in 0.00 seconds.
+
+Extracting 3 barcodes...
+Done in 1.39 minutes.
+
+Extracting UMIs (0 bases)...
+Done in 0.00 seconds.
+
+Done in 1.18 minutes.
+
+Mapping complete.
+Next, without post
+Reading 1 FASTQ/TXT file(s)...
+Done in 3.97 minutes.
+
+Done in 0.00 seconds.
+
+Extracting 3 barcodes...
+Done in 1.04 minutes.
+
+Extracting UMIs (0 bases)...
+Done in 0.00 seconds.
+
+Done in 1.13 minutes.
+
+Mapping complete.

@@ -8,63 +8,65 @@ from dask import delayed, compute
 import pathlib
 from itertools import islice
 from tqdm import tqdm
+import time
+from functools import wraps
 
-def load_and_shorten_files(seq_files, reverse_complement, txt_path="reads_shortened.txt"):
+def time_it(func):
+    """Decorator to print how long a method takes to run."""
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        start = time.time()
+        result = func(self, *args, **kwargs)
+        elapsed = time.time() - start
+        if elapsed < 60:
+            print(f"Done in {elapsed:.2f} seconds.\n")
+        else:
+            print(f"Done in {elapsed/60:.2f} minutes.\n")
+        return result
+    return wrapper
+
+
+def load_and_shorten_files(seq_files, reverse_complement):
     """
-    Load sequence files (FASTQ, gzipped FASTQ, or TXT) as dask dataframe and shorten FASTQ files if needed.
+    Load sequence files (FASTQ, gzipped FASTQ, or TXT) as Dask DataFrame.
+    For FASTQ files, keeps only every 4th line starting from line 1 (the sequence line).
     
     Args:
-        seq_files (list of str): List of file paths.
+        seq_files (list of str or str): List of file paths.
         reverse_complement (bool): Whether to apply reverse complement.
-        txt_path (str): Base path for shortened text files.
-
+    
     Returns:
-        dask.DataFrame: Loaded sequences as a Dask DataFrame.
+        dask.DataFrame: Loaded sequences as a Dask DataFrame with column 'sequence'.
     """
     # Normalize input
     if isinstance(seq_files, str):
         seq_files = [seq_files]
 
-    @delayed
-    def shorten_if_needed(f, out_path):
+    dfs = []
+    for f in seq_files:
         ext = pathlib.Path(f).suffix.lower()
         
-        try:
-            if ext in [".fastq", ".fq", ".gz"]:
-                print(f"Shortening {f} -> {out_path}")
-                shorten_seq_file(f, out_path)
-            else:
-                out_path = f  # already a TXT file
-            return out_path
-        except Exception as e:
-            print(f"Error processing file {f}: {e}")
-            raise
+        if ext in [".fastq", ".fq", ".gz"]:
+            # Read all lines
+            df = dd.read_csv(f, header=None, names=["raw"], dtype=str)
 
-    # Launch parallel tasks
-    delayed_files = [
-        shorten_if_needed(f, txt_path if len(seq_files) == 1 else f"{txt_path.rsplit('.', 1)[0]}_{i}.txt"
-)
-        for i, f in enumerate(seq_files)
-    ]
+            # Keep only rows 1, 5, 9, ... → sequence lines
+            df = df.map_partitions(lambda d: d.iloc[1::4])
+            df = df.rename(columns={"raw": "sequence"})
+        else:
+            # Assume plain TXT file with one sequence per line
+            df = dd.read_csv(f, header=None, names=["sequence"], dtype=str)
 
-    # Compute shortened files in parallel
-    shortened_files = compute(*delayed_files)
+        dfs.append(df)
 
-    print(shortened_files)
+    # Concatenate all inputs
+    all_seq_df = dd.concat(dfs)
 
-    for path in shortened_files:
-        if not os.path.exists(path):
-            print(f"Missing: {path}")
-        elif os.path.getsize(path) == 0:
-            print(f"Empty: {path}")
-
-    # Load all TXT files into a single Dask DataFrame
-    all_seq_df = dd.read_csv(shortened_files, header=None, names=["sequence"], dtype=str)
-
+    # Optionally apply reverse complement
     if reverse_complement:
-        all_seq_df['sequence'] = all_seq_df['sequence'].map_partitions(
+        all_seq_df["sequence"] = all_seq_df["sequence"].map_partitions(
             reverse_complement_series,
-            meta=('sequence', str)
+            meta=("sequence", str)
         )
 
     return all_seq_df
@@ -93,20 +95,39 @@ def reverse_complement_series(s: pd.Series) -> pd.Series:
             print(seq)
             return ""
     return s.map(safe_rc)
-    
 
-def shorten_seq_file(infile, outfile):
+def reverse_complement(seq):
+    return str(Seq(str(seq)).reverse_complement())
+
+    
+from tqdm import tqdm
+import gzip
+from itertools import islice
+
+def shorten_seq_file(infile, outfile, chunk_size=4*100000):
     """
-    Extracts sequences from a FASTQ/FASTQ.GZ file into a plain text file
-    (1 sequence per line). Only the 2nd line of each FASTQ record is extracted.
+    Fastest extraction of sequences (2nd line of each FASTQ record) to a text file.
+    Works with plain FASTQ or gzipped FASTQ.
+    
+    Args:
+        infile (str): Input FASTQ or FASTQ.GZ file.
+        outfile (str): Output text file (1 sequence per line).
+        chunk_size (int): Number of lines to read at once (multiple of 4).
     """
+    print(f"Shortening {infile} to {outfile}...\n")
     opener = gzip.open if infile.endswith(".gz") else open
-    
-    with opener(infile, "rt") as fin, open(outfile, "w") as fout:
-        for i, line in enumerate(fin):
-            if i % 4 == 1:  # 2nd line of each FASTQ record
-                fout.write(line)
 
+    with opener(infile, "rt") as fin, open(outfile, "w") as fout:
+        pbar = tqdm(desc="Processing chunks", unit="chunk")
+        while True:
+            lines = list(islice(fin, chunk_size))
+            if not lines:
+                break
+            fout.writelines(lines[1::4])  # Write every 2nd line of 4-line record
+            pbar.update(1)
+        pbar.close()
+
+                
 def save_parquet(df, path):
     """
     Saves the mapped barcode DataFrame to a Parquet file with a progress bar.
@@ -123,7 +144,7 @@ def save_parquet(df, path):
         >>> mapper.save_parquet("mapped_barcodes.parquet")
     """
     if os.path.exists(path):
-        print(f"Warning: The path '{path}' already exists and will be added to.")
+        print(f"Warning: The path '{path}' already exists and will be added to.\n")
 
     with ProgressBar():
         df.to_parquet(

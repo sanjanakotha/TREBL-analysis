@@ -1,0 +1,40 @@
+Reading 1 FASTQ/TXT file(s)...
+Done in 8.22 minutes.
+
+Reverse complement of sequences...
+Done in 1.67 minutes.
+
+Extracting 3 barcodes...
+Done in 3.10 minutes.
+
+Extracting UMIs (0 bases)...
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 42.46 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): step1_AD_AD_BC_RPTR_BC_
+Full prefix for this instance: step1_AD_AD_BC_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. grouped
+3. thresholded
+4. unique_target
+5. quality_designed
+
+Grouping step1_AD_AD_BC_RPTR_BC_initial...
+Done in 28.17 seconds.
+
+Thresholding...
+Using reads threshold of 50.
+Done in 20.77 seconds.
+
+Key/target checks...
+Done in 4.61 seconds.
+
+Filtering to quality and designed...
+Done in 0.01 seconds.
+
+Done.

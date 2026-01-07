@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/notebooks/ChopTFs/run_step1_on_ChopTFs.py", line 37, in <module>
+    step1_mapper = initial_map.InitialMapper(db_path = "/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/duckdb/ChopTFs_redone.db",
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/scripts/initial_map.py", line 41, in __init__
+    self.con = duckdb.connect(db_path)
+               ^^^^^^^^^^^^^^^^^^^^^^^
+duckdb.duckdb.IOException: IO Error: Could not set lock on file "/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/duckdb/ChopTFs_redone.db": Conflicting lock is held in PID 0. See also https://duckdb.org/docs/stable/connect/concurrency

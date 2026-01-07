@@ -1,0 +1,90 @@
+Libraries and custom modules imported successfully.
+Defining barcode configurations...
+Barcode definitions complete.
+Initializing Step 1 mapper...
+Running initial mapping...
+Reading 1 FASTQ/TXT file(s)...
+Done in 5.06 minutes.
+
+Reverse complement of sequences...
+Done in 1.14 minutes.
+
+Extracting 3 barcodes...
+GGCTAGC(.{1,120})
+CGCGCC(.{1,11})
+CTCGAG(.{1,14})
+Done in 1.58 minutes.
+
+Extracting UMIs (0 bases)...
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 26.75 seconds.
+
+Mapping complete.
+Initial mapping completed.
+Initializing map refiner...
+Base prefix (stable across descriptors): step1_AD_AD_BC_RPTR_BC_
+Full prefix for this instance: step1_AD_AD_BC_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. barcode_exists
+3. quality
+4. error_corrected
+5. grouped
+6. thresholded
+7. unique_target
+8. designed
+
+Refining map from database...
+Removing rows with null or empty barcodes (excluding AD)...
+Done in 9.11 seconds.
+
+
+Filtering to high-quality reads...
+Created table: step1_AD_AD_BC_RPTR_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 45.03 seconds.
+
+
+=== Running error correction step on step1_AD_AD_BC_RPTR_BC_quality ===
+
+=== Applying whitelist for step1 ===
+Generating FASTQ: /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4_error_corrected/figures/step1_AD_AD_BC_RPTR_BC_filtered_barcodes_extracted.fastq
+Wrote 32915865 reads to /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4_error_corrected/figures/step1_AD_AD_BC_RPTR_BC_filtered_barcodes_extracted.fastq
+Done in 31.38 seconds.
+
+Running umi_tools whitelist...
+Running umi_tools whitelist on step1_AD_AD_BC_RPTR_BC_filtered_barcodes_extracted.fastq ...
+/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/conda/umi_tools/lib/python3.12/site-packages/umi_tools/whitelist_methods.py:207: UserWarning: Attempt to set non-positive xlim on a log-scaled axis will be ignored.
+  fig3.set_xlim(0, len(counts)*1.25)
+
+Whitelist complete.
+- Log: /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4_error_corrected/figures/step1_AD_AD_BC_RPTR_BC_filtered_barcodes_extracted_whitelist.log
+- Output: /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4_error_corrected/figures/step1_AD_AD_BC_RPTR_BC_filtered_barcodes_extracted_whitelist.txt
+- Plots: /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4_error_corrected/figures/step1_AD_AD_BC_RPTR_BC_filtered_barcodes_extracted_plots_*.png
+Unique canonical barcodes: 8
+Done in 0.10 seconds.
+
+Whitelist application complete for step1 at step1_AD_AD_BC_RPTR_BC_error_corrected
+Done in 15.75 minutes.
+
+Grouping step1_AD_AD_BC_RPTR_BC_error_corrected...
+Done in 0.96 seconds.
+
+Thresholding...
+Using reads threshold of 50.
+Done in 0.49 seconds.
+
+Filtering so that at least 90% of reads come from the most abundant target...
+	Processing mapping 1: RPTR_BC → AD
+Created filtered table: step1_AD_AD_BC_RPTR_BC_unique_target
+Done in 0.08 seconds.
+
+
+Filtering to designed sequences...
+Created table: step1_AD_AD_BC_RPTR_BC_designed — kept only Designed == 1.
+Done in 0.00 seconds.
+
+Done.
+Map refinement completed.
