@@ -1,0 +1,7 @@
+pandas
+dask
+duckdb
+biopython
+sphinx
+furo
+pyarrow

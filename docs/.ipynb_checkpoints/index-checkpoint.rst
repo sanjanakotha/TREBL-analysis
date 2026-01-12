@@ -13,8 +13,9 @@ See :doc:`examples` for a full mapping example.
    :maxdepth: 2
    :caption: Contents:
 
-   mapping
+   initial_map
    map_refiner
+   umi_deduplicate
 
 Indices and tables
 --------

@@ -4,5 +4,11 @@ scripts
 .. toctree::
    :maxdepth: 4
 
+   complexity
+   error_correct
+   finder
+   initial_map
    map_refiner
-   mapping
+   plotting
+   preprocess
+   umi_deduplicate
