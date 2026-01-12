@@ -16,8 +16,8 @@
     <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="mapping module" href="mapping.html" />
-    <link rel="prev" title="TREBL-scripts Documentation" href="index.html" />
+    <link rel="next" title="umi_deduplicate module" href="umi_deduplicate.html" />
+    <link rel="prev" title="initial_map module" href="initial_map.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -38,194 +38,221 @@
 <span id="map-refiner-module"></span><h1>map_refiner module<a class="headerlink" href="#module-map_refiner" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="map_refiner.MapRefiner">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">map_refiner.</span></span><span class="sig-name descname"><span class="pre">MapRefiner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">db_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reads_threshold</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_pairs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">map_refiner.</span></span><span class="sig-name descname"><span class="pre">MapRefiner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">db_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bc_objects</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_pairs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reads_threshold</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">map_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">descriptor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">design_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_figures_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_fraction_major_target</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manual_ec_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">umi_object</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>A class to refine sequencing maps made through BarcodeMapper in mapping.py.</p>
+<p>A class to refine sequencing maps made through InitialMapper.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="map_refiner.MapRefiner.db_path">
-<span class="sig-name descname"><span class="pre">db_path</span></span><a class="headerlink" href="#map_refiner.MapRefiner.db_path" title="Permalink to this definition">¶</a></dt>
-<dd><p>Path for new or existing DuckDB database.</p>
+<dt class="sig sig-object py" id="map_refiner.MapRefiner.DEFAULT_MAP_ORDER">
+<span class="sig-name descname"><span class="pre">DEFAULT_MAP_ORDER</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['initial',</span> <span class="pre">'quality',</span> <span class="pre">'error_corrected',</span> <span class="pre">'grouped',</span> <span class="pre">'thresholded',</span> <span class="pre">'barcode_exists',</span> <span class="pre">'unique_target',</span> <span class="pre">'designed']</span></em><a class="headerlink" href="#map_refiner.MapRefiner.DEFAULT_MAP_ORDER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="map_refiner.MapRefiner.apply_whitelist">
+<span class="sig-name descname"><span class="pre">apply_whitelist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prev_table</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.apply_whitelist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.apply_whitelist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply umi_tools whitelist to previous table: replace barcodes and AD sequences with canonical ones,
+then recalculate quality flags and ‘Designed’ based on canonical barcode.
+Saves results to a new table prefixed with error_corrected.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="map_refiner.MapRefiner.barcode_exists">
+<span class="sig-name descname"><span class="pre">barcode_exists</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">previous_table</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'initial'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.barcode_exists"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.barcode_exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove rows where any barcode column (except AD) is NULL or an empty string.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="map_refiner.MapRefiner.check_exists">
+<span class="sig-name descname"><span class="pre">check_exists</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">check_table_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.check_exists"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.check_exists" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="map_refiner.MapRefiner.close_connection">
+<span class="sig-name descname"><span class="pre">close_connection</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.close_connection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.close_connection" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="map_refiner.MapRefiner.create_designed">
+<span class="sig-name descname"><span class="pre">create_designed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">previous_table</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'quality'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.create_designed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.create_designed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Keep only rows where Designed == 1.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="map_refiner.MapRefiner.create_error_corrected">
+<span class="sig-name descname"><span class="pre">create_error_corrected</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">previous_table</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'quality'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.create_error_corrected"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.create_error_corrected" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform error correction by generating a FASTQ from grouped barcodes,
+applying umi_tools whitelist, and updating the database with corrected barcodes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="map_refiner.MapRefiner.create_grouped">
+<span class="sig-name descname"><span class="pre">create_grouped</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">previous_table</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'quality_designed'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.create_grouped"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.create_grouped" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="map_refiner.MapRefiner.create_initial">
+<span class="sig-name descname"><span class="pre">create_initial</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parquet_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.create_initial"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.create_initial" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="map_refiner.MapRefiner.create_quality">
+<span class="sig-name descname"><span class="pre">create_quality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">previous_table</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'initial'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.create_quality"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.create_quality" title="Permalink to this definition">¶</a></dt>
+<dd><p>Keep only rows where all <a href="#id1"><span class="problematic" id="id2">*</span></a>_qual columns are TRUE.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="map_refiner.MapRefiner.create_thresholded">
+<span class="sig-name descname"><span class="pre">create_thresholded</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">previous_table</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.create_thresholded"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.create_thresholded" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="map_refiner.MapRefiner.create_unique_target">
+<span class="sig-name descname"><span class="pre">create_unique_target</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">previous_table</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.create_unique_target"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.create_unique_target" title="Permalink to this definition">¶</a></dt>
+<dd><p>For each (key_cols, target_cols) pair, independently keep keys where the most abundant target
+accounts for ≥ self.min_fraction_major_target of reads. Then, keep rows that pass all filters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="map_refiner.MapRefiner.generate_fastq_for_whitelist">
+<span class="sig-name descname"><span class="pre">generate_fastq_for_whitelist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'_barcodes_extracted.fastq'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prev_table</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'quality'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.generate_fastq_for_whitelist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.generate_fastq_for_whitelist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a synthetic FASTQ file from the filtered previous table, using
+concatenated barcode for reads that pass quality checks.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>output_dir</strong> (<em>str</em><em> or </em><em>Path</em><em>, </em><em>optional</em>) – Directory to save the FASTQ. Defaults to current working directory.</p></li>
+<li><p><strong>suffix</strong> (<em>str</em>) – Suffix for FASTQ filename.</p></li>
+<li><p><strong>prev_table</strong> (<em>str</em><em>, </em><em>optional</em>) – Name of the previous DuckDB table to use instead of initial table.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Path to the generated FASTQ file.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>str</p>
 </dd>
 </dl>
 </dd></dl>
 
-<dl class="py attribute">
-<dt class="sig sig-object py" id="map_refiner.MapRefiner.cols">
-<span class="sig-name descname"><span class="pre">cols</span></span><a class="headerlink" href="#map_refiner.MapRefiner.cols" title="Permalink to this definition">¶</a></dt>
-<dd><p>List of barcode or tile column names to process. At least one must be “AD”.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>list</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="map_refiner.MapRefiner.reads_threshold">
-<span class="sig-name descname"><span class="pre">reads_threshold</span></span><a class="headerlink" href="#map_refiner.MapRefiner.reads_threshold" title="Permalink to this definition">¶</a></dt>
-<dd><p>Minimum reads threshold for filtering map4.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="map_refiner.MapRefiner.column_pairs">
-<span class="sig-name descname"><span class="pre">column_pairs</span></span><a class="headerlink" href="#map_refiner.MapRefiner.column_pairs" title="Permalink to this definition">¶</a></dt>
-<dd><p>List of (key_cols, target_cols) for enforcing each target maps to one key.
-key_cols (str or tuple): Column(s) forming the key.
-target_cols (str or tuple): Column(s) forming the target.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>list</p>
-</dd>
-</dl>
-</dd></dl>
-
-<p class="rubric">Example</p>
-<p><a href="#id1"><span class="problematic" id="id2">``</span></a><a href="#id3"><span class="problematic" id="id4">`</span></a>python
-refiner = MapRefiner(</p>
-<blockquote>
-<div><p>db_path=”my_database.duckdb”,
-cols=[“AD”, “AD_BC”, “RP_BC”],
-reads_threshold=5,
-column_pairs=[(“AD”, “RP_BC”), ((“HawkBCs”, “AD_BC”), “RP_BC”)]</p>
-</div></blockquote>
 <dl class="py method">
-<dt class="sig sig-object py" id="map_refiner.MapRefiner.create_map1">
-<span class="sig-name descname"><span class="pre">create_map1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parquet_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.create_map1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.create_map1" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load raw sequencing data from Parquet file or pattern into map1.</p>
+<dt class="sig sig-object py" id="map_refiner.MapRefiner.get_map_df">
+<span class="sig-name descname"><span class="pre">get_map_df</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">map_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">insert_prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.get_map_df"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.get_map_df" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="map_refiner.MapRefiner.merge_design">
+<span class="sig-name descname"><span class="pre">merge_design</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prev_table</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.merge_design"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.merge_design" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge with design file if provided, or create default Designed column.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>parquet_path</strong> (<em>str</em>) – Path to input Parquet file(s).</p>
+<dd class="field-odd"><p><strong>prev_table</strong> (<em>str</em><em>, </em><em>optional</em>) – Name of the DuckDB table to merge design info into.
+Defaults to <cite>seq</cite> if not provided.</p>
 </dd>
 </dl>
-<p class="rubric">Example</p>
-<p><code class="docutils literal notranslate"><span class="pre">`python</span>
-<span class="pre">refiner.create_map1(&quot;reads.parquet&quot;)</span>
-<span class="pre">refiner.create_map1(&quot;folder/*.parquet&quot;)</span>
-<span class="pre">`</span></code></p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="map_refiner.MapRefiner.create_map2">
-<span class="sig-name descname"><span class="pre">create_map2</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.create_map2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.create_map2" title="Permalink to this definition">¶</a></dt>
-<dd><p>Remove low-quality or non-designed rows from map1 to create map2.</p>
-<dl class="simple">
-<dt>Specifically:</dt><dd><ol class="arabic simple">
-<li><p>Removes low-quality barcodes or tiles.</p></li>
-<li><p>Removes non-designed tiles.</p></li>
-</ol>
+<dt class="sig sig-object py" id="map_refiner.MapRefiner.plot_all_whitelists_from_summary">
+<span class="sig-name descname"><span class="pre">plot_all_whitelists_from_summary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">summary_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dpi</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">300</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.plot_all_whitelists_from_summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.plot_all_whitelists_from_summary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot summaries of multiple barcodes using precomputed summary_df
+instead of reading whitelist files again.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>summary_df</strong> (<em>pd.DataFrame</em>) – DataFrame returned from summarize_canonical_subsequences, must contain
+columns [‘barcode’, ‘canonical’, ‘num_merged’, ‘largest_count’, ‘rest_count’].</p></li>
+<li><p><strong>n_cols</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of panels per row. Default is 4.</p></li>
+<li><p><strong>dpi</strong> (<em>int</em><em>, </em><em>optional</em>) – Figure DPI. Default is 300.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>fig</strong> – Figure containing all barcode summaries.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>matplotlib.figure.Figure</p>
 </dd>
 </dl>
-<p class="rubric">Example</p>
-<p><code class="docutils literal notranslate"><span class="pre">`python</span>
-<span class="pre">refiner.create_map2()</span>
-<span class="pre">`</span></code></p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="map_refiner.MapRefiner.create_map3">
-<span class="sig-name descname"><span class="pre">create_map3</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.create_map3"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.create_map3" title="Permalink to this definition">¶</a></dt>
-<dd><p>Group map2 by barcode/tile columns and count occurrences to create map3.</p>
-<p class="rubric">Example</p>
-<p><code class="docutils literal notranslate"><span class="pre">`python</span>
-<span class="pre">refiner.create_map3()</span>
-<span class="pre">`</span></code></p>
+<dt class="sig sig-object py" id="map_refiner.MapRefiner.plot_error_correction">
+<span class="sig-name descname"><span class="pre">plot_error_correction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">save_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.plot_error_correction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.plot_error_correction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summarize counts of canonical subsequences (barcodes) per AD sequence
+from whitelist files, produce a summary table and optional plots.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>save_dir</strong> (<em>str</em><em> or </em><em>Path</em><em>, </em><em>optional</em>) – Directory to save outputs.</p></li>
+<li><p><strong>plot</strong> (<em>bool</em>) – Whether to produce plots.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>summary table of barcodes with counts and group sizes.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="map_refiner.MapRefiner.create_map4">
-<span class="sig-name descname"><span class="pre">create_map4</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.create_map4"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.create_map4" title="Permalink to this definition">¶</a></dt>
-<dd><p>Filter map3 by read count threshold to create map4.</p>
-<p class="rubric">Example</p>
-<p><code class="docutils literal notranslate"><span class="pre">`python</span>
-<span class="pre">refiner.create_map4()</span>
-<span class="pre">`</span></code></p>
+<dt class="sig sig-object py" id="map_refiner.MapRefiner.plot_loss">
+<span class="sig-name descname"><span class="pre">plot_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">palette</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rocket_r'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text_offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_background</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.plot_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.plot_loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot loss across mapping steps showing total reads vs unique counts.
+Adds numeric count labels at the end of each bar.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>save_path</strong> (<em>str</em><em> or </em><em>None</em>) – Optional path to save the plot.</p></li>
+<li><p><strong>ax</strong> (<em>matplotlib.axes.Axes</em><em> or </em><em>None</em>) – Optional existing axis to draw on.</p></li>
+<li><p><strong>palette</strong> (<em>str</em>) – Seaborn color palette name.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The plotted axis.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>matplotlib.axes.Axes</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="map_refiner.MapRefiner.create_map5">
-<span class="sig-name descname"><span class="pre">create_map5</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.create_map5"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.create_map5" title="Permalink to this definition">¶</a></dt>
-<dd><p>Enforce mapping constraints from column_pairs on map4 to create map5.</p>
-<p>Each target combination should map to exactly one key combination.
-Supports single-column or multi-column keys and targets.</p>
-<p class="rubric">Example</p>
-<p><code class="docutils literal notranslate"><span class="pre">`python</span>
-<span class="pre">refiner.create_map5()</span>
-<span class="pre">`</span></code></p>
-</dd></dl>
+<dt class="sig sig-object py" id="map_refiner.MapRefiner.plot_reads_histogram">
+<span class="sig-name descname"><span class="pre">plot_reads_histogram</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">previous_table</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.plot_reads_histogram"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.plot_reads_histogram" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="map_refiner.MapRefiner.refine_map_from_db">
-<span class="sig-name descname"><span class="pre">refine_map_from_db</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.refine_map_from_db"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.refine_map_from_db" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run the map refinement pipeline assuming map1 already exists in the database.</p>
-<p class="rubric">Example</p>
-<p><code class="docutils literal notranslate"><span class="pre">`python</span>
-<span class="pre">refiner.refine_map_from_db()</span>
-<span class="pre">`</span></code></p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="map_refiner.MapRefiner.refine_map_from_parquet">
-<span class="sig-name descname"><span class="pre">refine_map_from_parquet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parquet_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.refine_map_from_parquet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.refine_map_from_parquet" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run the full map refinement pipeline starting from Parquet data.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>parquet_path</strong> (<em>str</em>) – Path to input Parquet file(s).</p>
-</dd>
-</dl>
-<p class="rubric">Example</p>
-<p><code class="docutils literal notranslate"><span class="pre">`python</span>
-<span class="pre">refiner.refine_map_from_parquet(&quot;reads.parquet&quot;)</span>
-<span class="pre">refiner.refine_map_from_parquet(&quot;folder/*.parquet&quot;)</span>
-<span class="pre">`</span></code></p>
-</dd></dl>
+<span class="sig-name descname"><span class="pre">refine_map_from_db</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">save_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">should_check_exists</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.refine_map_from_db"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.refine_map_from_db" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="map_refiner.MapRefiner.save_loss_table">
-<span class="sig-name descname"><span class="pre">save_loss_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_csv_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.save_loss_table"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.save_loss_table" title="Permalink to this definition">¶</a></dt>
-<dd><p>Save a loss table of map1-&gt;map5 row counts with descriptive labels and percentages.</p>
-<dl class="simple">
-<dt>Percentages include:</dt><dd><ul class="simple">
-<li><p>% of previous step</p></li>
-<li><p>% of total reads (map1)</p></li>
-</ul>
-</dd>
-</dl>
+<span class="sig-name descname"><span class="pre">save_loss_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_csv_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.save_loss_table"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.save_loss_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a table summarizing the counts and losses at each step of the mapping process.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>output_csv_path</strong> (<em>str</em>) – File path to save CSV.</p>
+<dd class="field-odd"><p><strong>output_csv_path</strong> (<em>str</em><em> or </em><em>None</em>) – If provided, saves the resulting DataFrame as a CSV file at this path.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>DataFrame summarizing unique counts, unique AD counts, total reads,
+and percentage losses at each mapping step.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
 </dd>
 </dl>
-<p class="rubric">Example</p>
-<p><code class="docutils literal notranslate"><span class="pre">`python</span>
-<span class="pre">refiner.save_map_lengths(&quot;map_lengths.csv&quot;)</span>
-<span class="pre">`</span></code></p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="map_refiner.MapRefiner.save_map">
 <span class="sig-name descname"><span class="pre">save_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">map_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">map_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.save_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.save_map" title="Permalink to this definition">¶</a></dt>
-<dd><p>Save a DuckDB table to CSV.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>map_name</strong> (<em>str</em>) – Table name to save.</p></li>
-<li><p><strong>map_path</strong> (<em>str</em>) – File path for CSV output.</p></li>
-</ul>
-</dd>
-</dl>
-<p class="rubric">Example</p>
-<p><code class="docutils literal notranslate"><span class="pre">`python</span>
-<span class="pre">refiner.save_map(&quot;map5&quot;,</span> <span class="pre">&quot;map5.csv&quot;)</span>
-<span class="pre">`</span></code></p>
-</dd></dl>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="map_refiner.MapRefiner.show_tables">
+<span class="sig-name descname"><span class="pre">show_tables</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/map_refiner.html#MapRefiner.show_tables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#map_refiner.MapRefiner.show_tables" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
@@ -250,16 +277,17 @@ Supports single-column or multi-column keys and targets.</p>
 <h3>Navigation</h3>
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="initial_map.html">initial_map module</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">map_refiner module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="mapping.html">mapping module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="umi_deduplicate.html">umi_deduplicate module</a></li>
 </ul>
 
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="index.html" title="previous chapter">TREBL-scripts Documentation</a></li>
-      <li>Next: <a href="mapping.html" title="next chapter">mapping module</a></li>
+      <li>Previous: <a href="initial_map.html" title="previous chapter">initial_map module</a></li>
+      <li>Next: <a href="umi_deduplicate.html" title="next chapter">umi_deduplicate module</a></li>
   </ul></li>
 </ul>
 </div>

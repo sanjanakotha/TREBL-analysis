@@ -16,7 +16,6 @@
     <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="map_refiner module" href="map_refiner.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -33,290 +32,8 @@
 
           <div class="body" role="main">
             
-  <section id="module-mapping">
-<span id="mapping-module"></span><h1>mapping module<a class="headerlink" href="#module-mapping" title="Permalink to this heading">¶</a></h1>
-<dl class="py class">
-<dt class="sig sig-object py" id="mapping.BarcodeMapper">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mapping.</span></span><span class="sig-name descname"><span class="pre">BarcodeMapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">design_file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bc_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preceders</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lengths</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reverse_complement</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mapping.html#BarcodeMapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mapping.BarcodeMapper" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>A class to extract and map barcodes from DNA sequences in FASTQ or CSV files.</p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="mapping.BarcodeMapper.seq_file">
-<span class="sig-name descname"><span class="pre">seq_file</span></span><a class="headerlink" href="#mapping.BarcodeMapper.seq_file" title="Permalink to this definition">¶</a></dt>
-<dd><p>Path to the input FASTQ or sequence file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>str</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="mapping.BarcodeMapper.design_file_path">
-<span class="sig-name descname"><span class="pre">design_file_path</span></span><a class="headerlink" href="#mapping.BarcodeMapper.design_file_path" title="Permalink to this definition">¶</a></dt>
-<dd><p>Path to the CSV file containing designed sequences.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>str</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="mapping.BarcodeMapper.bc_names">
-<span class="sig-name descname"><span class="pre">bc_names</span></span><a class="headerlink" href="#mapping.BarcodeMapper.bc_names" title="Permalink to this definition">¶</a></dt>
-<dd><p>Names of barcodes to extract.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>list of str</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="mapping.BarcodeMapper.preceders">
-<span class="sig-name descname"><span class="pre">preceders</span></span><a class="headerlink" href="#mapping.BarcodeMapper.preceders" title="Permalink to this definition">¶</a></dt>
-<dd><p>Preceding sequences used for barcode extraction.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>list of str</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="mapping.BarcodeMapper.posts">
-<span class="sig-name descname"><span class="pre">posts</span></span><a class="headerlink" href="#mapping.BarcodeMapper.posts" title="Permalink to this definition">¶</a></dt>
-<dd><p>Following sequences used for barcode extraction.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>list of str</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="mapping.BarcodeMapper.lengths">
-<span class="sig-name descname"><span class="pre">lengths</span></span><a class="headerlink" href="#mapping.BarcodeMapper.lengths" title="Permalink to this definition">¶</a></dt>
-<dd><p>Lengths of each barcode to extract.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>list of int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="mapping.BarcodeMapper.reverse_complement">
-<span class="sig-name descname"><span class="pre">reverse_complement</span></span><a class="headerlink" href="#mapping.BarcodeMapper.reverse_complement" title="Permalink to this definition">¶</a></dt>
-<dd><p>Whether to reverse complement sequences before mapping.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>bool</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="mapping.BarcodeMapper.seq_df">
-<span class="sig-name descname"><span class="pre">seq_df</span></span><a class="headerlink" href="#mapping.BarcodeMapper.seq_df" title="Permalink to this definition">¶</a></dt>
-<dd><p>DataFrame storing sequences.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>dask.DataFrame or None</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="mapping.BarcodeMapper.mapped_df">
-<span class="sig-name descname"><span class="pre">mapped_df</span></span><a class="headerlink" href="#mapping.BarcodeMapper.mapped_df" title="Permalink to this definition">¶</a></dt>
-<dd><p>DataFrame storing barcodes mapped to design file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>dask.DataFrame or None</p>
-</dd>
-</dl>
-</dd></dl>
-
-<p class="rubric">Example</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">mapper</span> <span class="o">=</span> <span class="n">BarcodeMapper</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="n">seq_file</span><span class="o">=</span><span class="s2">&quot;reads.fastq&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">design_file_path</span><span class="o">=</span><span class="s2">&quot;design.csv&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">bc_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;AD&quot;</span><span class="p">,</span> <span class="s2">&quot;AD_BC&quot;</span><span class="p">,</span> <span class="s2">&quot;RPTR_BC&quot;</span><span class="p">],</span>
-<span class="gp">... </span>    <span class="n">preceders</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;GGCTAGC&quot;</span><span class="p">,</span> <span class="s2">&quot;CGCGCC&quot;</span><span class="p">,</span> <span class="s2">&quot;CTCGAG&quot;</span><span class="p">],</span>
-<span class="gp">... </span>    <span class="n">posts</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">],</span>
-<span class="gp">... </span>    <span class="n">lengths</span><span class="o">=</span><span class="p">[</span><span class="mi">120</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">14</span><span class="p">]</span>
-<span class="gp">... </span>    <span class="n">reverse_complement</span><span class="o">=</span><span class="kc">True</span>
-<span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">mapped_df</span> <span class="o">=</span> <span class="n">mapper</span><span class="o">.</span><span class="n">create_map</span><span class="p">()</span>
-</pre></div>
-</div>
-<dl class="py method">
-<dt class="sig sig-object py" id="mapping.BarcodeMapper.add_barcode">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">add_barcode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bc_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preceder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bc_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">120</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mapping.html#BarcodeMapper.add_barcode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mapping.BarcodeMapper.add_barcode" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extracts a barcode from sequences between a preceding and following pattern.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>seq_df</strong> (<em>pd.DataFrame</em><em> or </em><em>dask.DataFrame</em>) – DataFrame containing a ‘sequence’ column.</p></li>
-<li><p><strong>bc_name</strong> (<em>str</em>) – Name of the barcode to create.</p></li>
-<li><p><strong>preceder</strong> (<em>str</em>) – Sequence preceding the barcode.</p></li>
-<li><p><strong>post</strong> (<em>str</em>) – Sequence following the barcode.</p></li>
-<li><p><strong>bc_length</strong> (<em>int</em><em>, </em><em>optional</em>) – Maximum length of barcode to extract. Defaults to 120.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Updated DataFrame with barcode and quality columns.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>pd.DataFrame or dask.DataFrame</p>
-</dd>
-</dl>
-<p class="rubric">Example</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;sequence&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;AAAXXXCCC&quot;</span><span class="p">,</span> <span class="s2">&quot;AAAYYYCCC&quot;</span><span class="p">]})</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">BarcodeMapper</span><span class="o">.</span><span class="n">add_barcode</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s2">&quot;AD&quot;</span><span class="p">,</span> <span class="s2">&quot;AAA&quot;</span><span class="p">,</span> <span class="s2">&quot;CCC&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
-<span class="go">   sequence   AD  AD_qual</span>
-<span class="go">0  AAAXXXCCC  XXX     True</span>
-<span class="go">1  AAAYYYCCC  YYY     True</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="mapping.BarcodeMapper.add_multiple_barcodes">
-<span class="sig-name descname"><span class="pre">add_multiple_barcodes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq_df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mapping.html#BarcodeMapper.add_multiple_barcodes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mapping.BarcodeMapper.add_multiple_barcodes" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extracts all defined barcodes from sequences in a DataFrame.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>seq_df</strong> (<em>pd.DataFrame</em><em> or </em><em>dask.DataFrame</em>) – DataFrame containing sequences.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Updated DataFrame with all barcodes added.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>pd.DataFrame or dask.DataFrame</p>
-</dd>
-</dl>
-<p class="rubric">Example</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;sequence&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;AAAXXXCCC&quot;</span><span class="p">,</span> <span class="s2">&quot;AAAYYYCCC&quot;</span><span class="p">]})</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">mapper</span> <span class="o">=</span> <span class="n">BarcodeMapper</span><span class="p">(</span><span class="o">...</span><span class="n">initialize</span><span class="o">...</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">mapper</span><span class="o">.</span><span class="n">add_multiple_barcodes</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="mapping.BarcodeMapper.check_designed">
-<span class="sig-name descname"><span class="pre">check_designed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">map_df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mapping.html#BarcodeMapper.check_designed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mapping.BarcodeMapper.check_designed" title="Permalink to this definition">¶</a></dt>
-<dd><p>Marks sequences as ‘Designed’ based on a provided design file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>map_df</strong> (<em>dask.DataFrame</em>) – DataFrame with an ‘AD’ column of sequences to check.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>DataFrame with an additional ‘Designed’ column (1 if in design file, else 0).</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>dask.DataFrame</p>
-</dd>
-</dl>
-<p class="rubric">Example</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">mapper</span> <span class="o">=</span> <span class="n">BarcodeMapper</span><span class="p">(</span><span class="o">...</span><span class="n">initialize</span><span class="o">...</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">df_checked</span> <span class="o">=</span> <span class="n">mapper</span><span class="o">.</span><span class="n">check_designed</span><span class="p">(</span><span class="n">mapper</span><span class="o">.</span><span class="n">seq_df</span><span class="p">)</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="mapping.BarcodeMapper.create_map">
-<span class="sig-name descname"><span class="pre">create_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">should_shorten_seq_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mapping.html#BarcodeMapper.create_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mapping.BarcodeMapper.create_map" title="Permalink to this definition">¶</a></dt>
-<dd><p>Processes the sequence file, extracts barcodes, and maps them to designed sequences.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>should_shorten_seq_file</strong> (<em>str</em><em> or </em><em>bool</em><em>, </em><em>optional</em>) – If provided as a path, the
-sequence file is first shortened and saved to this path. Defaults to False.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>DataFrame with barcodes mapped to design file.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>dask.DataFrame</p>
-</dd>
-</dl>
-<p class="rubric">Example</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">mapper</span> <span class="o">=</span> <span class="n">BarcodeMapper</span><span class="p">(</span><span class="o">...</span><span class="n">initialize</span><span class="o">...</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">mapped_df</span> <span class="o">=</span> <span class="n">mapper</span><span class="o">.</span><span class="n">create_map</span><span class="p">()</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="mapping.BarcodeMapper.reverse_complement_series">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">reverse_complement_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Series</span></span></span><a class="reference internal" href="_modules/mapping.html#BarcodeMapper.reverse_complement_series"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mapping.BarcodeMapper.reverse_complement_series" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the reverse complement of a pandas Series of DNA sequences.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>s</strong> (<em>pd.Series</em>) – Series of DNA sequences.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Series of reverse complemented sequences.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>pd.Series</p>
-</dd>
-</dl>
-<p class="rubric">Example</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="s2">&quot;ATGC&quot;</span><span class="p">,</span> <span class="s2">&quot;GATTACA&quot;</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">BarcodeMapper</span><span class="o">.</span><span class="n">reverse_complement_series</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
-<span class="go">0       GCAT</span>
-<span class="go">1    TGTAATC</span>
-<span class="go">dtype: object</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="mapping.BarcodeMapper.save_parquet">
-<span class="sig-name descname"><span class="pre">save_parquet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mapping.html#BarcodeMapper.save_parquet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mapping.BarcodeMapper.save_parquet" title="Permalink to this definition">¶</a></dt>
-<dd><p>Saves the mapped barcode DataFrame to a Parquet file with a progress bar.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – Path to save the Parquet file.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>None</p>
-</dd>
-</dl>
-<p class="rubric">Example</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">mapper</span> <span class="o">=</span> <span class="n">BarcodeMapper</span><span class="p">(</span><span class="o">...</span><span class="n">initialize</span><span class="o">...</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">mapper</span><span class="o">.</span><span class="n">create_map</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">mapper</span><span class="o">.</span><span class="n">save_parquet</span><span class="p">(</span><span class="s2">&quot;mapped_barcodes.parquet&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="mapping.BarcodeMapper.shorten_seq_file">
-<span class="sig-name descname"><span class="pre">shorten_seq_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_file</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mapping.html#BarcodeMapper.shorten_seq_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mapping.BarcodeMapper.shorten_seq_file" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extracts the DNA sequences (2nd line of every FASTQ record) using awk.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>output_file</strong> (<em>str</em>) – Path to save the extracted sequences.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>None</p>
-</dd>
-</dl>
-<p class="rubric">Example</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">mapper</span> <span class="o">=</span> <span class="n">BarcodeMapper</span><span class="p">(</span><span class="o">...</span><span class="n">initialize</span><span class="o">...</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">mapper</span><span class="o">.</span><span class="n">shorten_seq_file</span><span class="p">(</span><span class="s2">&quot;short_reads.txt&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</dd></dl>
-
-</dd></dl>
-
+  <section id="mapping-module">
+<h1>mapping module<a class="headerlink" href="#mapping-module" title="Permalink to this heading">¶</a></h1>
 </section>
 
 
@@ -337,16 +54,16 @@ sequence file is first shortened and saved to this path. Defaults to False.</p>
 
 <h3>Navigation</h3>
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="initial_map.html">initial_map module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="map_refiner.html">map_refiner module</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">mapping module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="umi_deduplicate.html">umi_deduplicate module</a></li>
 </ul>
 
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="map_refiner.html" title="previous chapter">map_refiner module</a></li>
   </ul></li>
 </ul>
 </div>

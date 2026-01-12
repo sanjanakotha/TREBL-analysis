@@ -34,252 +34,883 @@
   <h1>Source code for map_refiner</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">duckdb</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">&quot;white&quot;</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="s2">&quot;talk&quot;</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">matplotlib.cm</span> <span class="k">as</span> <span class="nn">cm</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">plotting</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">preprocess</span> <span class="kn">import</span> <span class="n">time_it</span>
+<span class="kn">from</span> <span class="nn">error_correct</span> <span class="kn">import</span> <span class="n">run_whitelist_on_concat_domains</span>
+<span class="kn">import</span> <span class="nn">error_correct</span>
 
 <div class="viewcode-block" id="MapRefiner"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner">[docs]</a><span class="k">class</span> <span class="nc">MapRefiner</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A class to refine sequencing maps made through BarcodeMapper in mapping.py.</span>
-
-<span class="sd">    Attributes:</span>
-<span class="sd">        db_path (str): Path for new or existing DuckDB database.</span>
-<span class="sd">        cols (list): List of barcode or tile column names to process. At least one must be &quot;AD&quot;.</span>
-<span class="sd">        reads_threshold (int): Minimum reads threshold for filtering map4.</span>
-<span class="sd">        column_pairs (list): List of (key_cols, target_cols) for enforcing each target maps to one key.</span>
-<span class="sd">            key_cols (str or tuple): Column(s) forming the key.</span>
-<span class="sd">            target_cols (str or tuple): Column(s) forming the target.</span>
-
-<span class="sd">    Example:</span>
-<span class="sd">        ```python</span>
-<span class="sd">        refiner = MapRefiner(</span>
-<span class="sd">            db_path=&quot;my_database.duckdb&quot;,</span>
-<span class="sd">            cols=[&quot;AD&quot;, &quot;AD_BC&quot;, &quot;RP_BC&quot;],</span>
-<span class="sd">            reads_threshold=5,</span>
-<span class="sd">            column_pairs=[(&quot;AD&quot;, &quot;RP_BC&quot;), ((&quot;HawkBCs&quot;, &quot;AD_BC&quot;), &quot;RP_BC&quot;)]</span>
-<span class="sd">        )</span>
-<span class="sd">        ```</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class to refine sequencing maps made through InitialMapper.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">db_path</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">reads_threshold</span><span class="p">,</span> <span class="n">column_pairs</span><span class="p">):</span>
+
+    <span class="n">DEFAULT_MAP_ORDER</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;initial&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;quality&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;error_corrected&quot;</span><span class="p">,</span>   <span class="c1"># new step</span>
+        <span class="s2">&quot;grouped&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;thresholded&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;barcode_exists&quot;</span><span class="p">,</span>       
+        <span class="s2">&quot;unique_target&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;designed&quot;</span>
+    <span class="p">]</span>
+
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+                 <span class="n">db_path</span><span class="p">,</span> 
+                 <span class="n">bc_objects</span><span class="p">,</span> 
+                 <span class="n">column_pairs</span><span class="p">,</span> 
+                 <span class="n">reads_threshold</span><span class="p">,</span>
+                 <span class="n">map_order</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">step_name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> 
+                 <span class="n">descriptor</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> 
+                 <span class="n">design_file</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+                 <span class="n">output_figures_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
+                 <span class="n">min_fraction_major_target</span> <span class="o">=</span> <span class="mf">0.9</span><span class="p">,</span>  
+                 <span class="n">manual_ec_threshold</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> 
+                 <span class="n">umi_object</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        
         <span class="bp">self</span><span class="o">.</span><span class="n">db_path</span> <span class="o">=</span> <span class="n">db_path</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">con</span> <span class="o">=</span> <span class="n">duckdb</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">db_path</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cols</span> <span class="o">=</span> <span class="n">cols</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span> <span class="o">=</span> <span class="n">reads_threshold</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bc_objects</span> <span class="o">=</span> <span class="p">[</span><span class="n">bc</span> <span class="k">for</span> <span class="n">bc</span> <span class="ow">in</span> <span class="n">bc_objects</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">bc</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">bc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bc_objects</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">column_pairs</span> <span class="o">=</span> <span class="n">column_pairs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span> <span class="o">=</span> <span class="n">reads_threshold</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span> <span class="o">=</span> <span class="n">step_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">descriptor</span> <span class="o">=</span> <span class="n">descriptor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">design_file</span> <span class="o">=</span> <span class="n">design_file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_figures_path</span> <span class="o">=</span> <span class="n">output_figures_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_fraction_major_target</span> <span class="o">=</span> <span class="n">min_fraction_major_target</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manual_ec_threshold</span> <span class="o">=</span> <span class="n">manual_ec_threshold</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">umi_object</span> <span class="o">=</span> <span class="n">umi_object</span>
+
+        <span class="n">cols_str</span> <span class="o">=</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cols</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table_prefix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">cols_str</span><span class="si">}</span><span class="s2">_&quot;</span>
         
-<div class="viewcode-block" id="MapRefiner.create_map1"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.create_map1">[docs]</a>    <span class="k">def</span> <span class="nf">create_map1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parquet_path</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load raw sequencing data from Parquet file or pattern into map1.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            parquet_path (str): Path to input Parquet file(s).</span>
-
-<span class="sd">        Example:</span>
-<span class="sd">            ```python</span>
-<span class="sd">            refiner.create_map1(&quot;reads.parquet&quot;)</span>
-<span class="sd">            refiner.create_map1(&quot;folder/*.parquet&quot;)</span>
-<span class="sd">            ```</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">            CREATE OR REPLACE TABLE map1 AS</span>
-<span class="s2">            SELECT *</span>
-<span class="s2">            FROM read_parquet(&#39;</span><span class="si">{</span><span class="n">parquet_path</span><span class="si">}</span><span class="s2">&#39;)</span>
-<span class="s2">            &quot;&quot;&quot;</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="MapRefiner.create_map2"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.create_map2">[docs]</a>    <span class="k">def</span> <span class="nf">create_map2</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove low-quality or non-designed rows from map1 to create map2.</span>
-
-<span class="sd">        Specifically:</span>
-<span class="sd">            1. Removes low-quality barcodes or tiles.</span>
-<span class="sd">            2. Removes non-designed tiles.</span>
-
-<span class="sd">        Example:</span>
-<span class="sd">            ```python</span>
-<span class="sd">            refiner.create_map2()</span>
-<span class="sd">            ```</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">cols_to_keep</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cols</span><span class="p">)</span>
-        <span class="n">where_clause</span> <span class="o">=</span> <span class="s2">&quot; AND &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2">_qual NOT IN (0, FALSE)&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cols</span><span class="p">])</span>
-        
-        <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">            CREATE OR REPLACE TABLE map2 AS</span>
-<span class="s2">            SELECT </span><span class="si">{</span><span class="n">cols_to_keep</span><span class="si">}</span>
-<span class="s2">            FROM map1</span>
-<span class="s2">            WHERE </span><span class="si">{</span><span class="n">where_clause</span><span class="si">}</span>
-<span class="s2">            AND Designed NOT IN (0, FALSE)</span>
-<span class="s2">            &quot;&quot;&quot;</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="MapRefiner.create_map3"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.create_map3">[docs]</a>    <span class="k">def</span> <span class="nf">create_map3</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Group map2 by barcode/tile columns and count occurrences to create map3.</span>
-
-<span class="sd">        Example:</span>
-<span class="sd">            ```python</span>
-<span class="sd">            refiner.create_map3()</span>
-<span class="sd">            ```</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">group_cols_sql</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cols</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">            CREATE OR REPLACE TABLE map3 AS</span>
-<span class="s2">            SELECT </span><span class="si">{</span><span class="n">group_cols_sql</span><span class="si">}</span><span class="s2">, COUNT(*) AS count</span>
-<span class="s2">            FROM map2</span>
-<span class="s2">            GROUP BY </span><span class="si">{</span><span class="n">group_cols_sql</span><span class="si">}</span>
-<span class="s2">            ORDER BY count DESC</span>
-<span class="s2">            &quot;&quot;&quot;</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="MapRefiner.create_map4"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.create_map4">[docs]</a>    <span class="k">def</span> <span class="nf">create_map4</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Filter map3 by read count threshold to create map4.</span>
-
-<span class="sd">        Example:</span>
-<span class="sd">            ```python</span>
-<span class="sd">            refiner.create_map4()</span>
-<span class="sd">            ```</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">            CREATE OR REPLACE TABLE map4 AS</span>
-<span class="s2">            SELECT *</span>
-<span class="s2">            FROM map3</span>
-<span class="s2">            WHERE count &gt; </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span><span class="si">}</span>
-<span class="s2">            &quot;&quot;&quot;</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="MapRefiner.create_map5"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.create_map5">[docs]</a>    <span class="k">def</span> <span class="nf">create_map5</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Enforce mapping constraints from column_pairs on map4 to create map5.</span>
-
-<span class="sd">        Each target combination should map to exactly one key combination.</span>
-<span class="sd">        Supports single-column or multi-column keys and targets.</span>
-
-<span class="sd">        Example:</span>
-<span class="sd">            ```python</span>
-<span class="sd">            refiner.create_map5()</span>
-<span class="sd">            ```</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">current_table</span> <span class="o">=</span> <span class="s2">&quot;map4&quot;</span>
-        
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">key_cols</span><span class="p">,</span> <span class="n">target_cols</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">column_pairs</span><span class="p">):</span>
-            <span class="n">tmp_table</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;tmp_map5_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span>
-            
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key_cols</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-                <span class="n">key_expr</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;CAST(</span><span class="si">{</span><span class="n">key_cols</span><span class="si">}</span><span class="s2"> AS VARCHAR)&quot;</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">key_expr</span> <span class="o">=</span> <span class="s2">&quot; || &#39;-&#39; || &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;CAST(</span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2"> AS VARCHAR)&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">key_cols</span><span class="p">])</span>
-            
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target_cols</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-                <span class="n">target_expr</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;CAST(</span><span class="si">{</span><span class="n">target_cols</span><span class="si">}</span><span class="s2"> AS VARCHAR)&quot;</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">target_expr</span> <span class="o">=</span> <span class="s2">&quot; || &#39;-&#39; || &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;CAST(</span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2"> AS VARCHAR)&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">target_cols</span><span class="p">])</span>
-            
-            <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">                CREATE OR REPLACE TABLE </span><span class="si">{</span><span class="n">tmp_table</span><span class="si">}</span><span class="s2"> AS</span>
-<span class="s2">                SELECT *</span>
-<span class="s2">                FROM </span><span class="si">{</span><span class="n">current_table</span><span class="si">}</span>
-<span class="s2">                WHERE </span><span class="si">{</span><span class="n">target_expr</span><span class="si">}</span><span class="s2"> IN (</span>
-<span class="s2">                    SELECT </span><span class="si">{</span><span class="n">target_expr</span><span class="si">}</span>
-<span class="s2">                    FROM </span><span class="si">{</span><span class="n">current_table</span><span class="si">}</span>
-<span class="s2">                    GROUP BY </span><span class="si">{</span><span class="n">target_expr</span><span class="si">}</span>
-<span class="s2">                    HAVING COUNT(DISTINCT </span><span class="si">{</span><span class="n">key_expr</span><span class="si">}</span><span class="s2">) = 1</span>
-<span class="s2">                )</span>
-<span class="s2">            &quot;&quot;&quot;</span><span class="p">)</span>
-            
-            <span class="n">current_table</span> <span class="o">=</span> <span class="n">tmp_table</span>
+        <span class="c1"># --- Build a stable base prefix that never changes across descriptors ---</span>
+        <span class="c1"># Example: step1_AD_ADBC_RPBC_</span>
+        <span class="n">cols_str</span> <span class="o">=</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cols</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">step_name</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table_prefix_base</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">cols_str</span><span class="si">}</span><span class="s2">_&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table_prefix_base</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cols_str</span><span class="si">}</span><span class="s2">_&quot;</span>
     
-        <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;CREATE OR REPLACE TABLE map5 AS SELECT * FROM </span><span class="si">{</span><span class="n">current_table</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+        <span class="c1"># --- Optionally append descriptor later ---</span>
+        <span class="c1"># This one changes per run if you specify a descriptor</span>
+        <span class="c1"># e.g. &quot;step1_AD_ADBC_RPBC_strict_&quot;</span>
+        <span class="k">if</span> <span class="n">descriptor</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table_prefix_with_descriptor</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">table_prefix_base</span><span class="si">}{</span><span class="n">descriptor</span><span class="si">}</span><span class="s2">_&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table_prefix_with_descriptor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table_prefix_base</span>
+    
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Base prefix (stable across descriptors):&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">table_prefix_base</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Full prefix for this instance:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">table_prefix_with_descriptor</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">()</span>
 
-<div class="viewcode-block" id="MapRefiner.refine_map_from_parquet"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.refine_map_from_parquet">[docs]</a>    <span class="k">def</span> <span class="nf">refine_map_from_parquet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parquet_path</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run the full map refinement pipeline starting from Parquet data.</span>
+        <span class="n">valid_steps</span> <span class="o">=</span> <span class="p">[</span><span class="n">step</span> <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">DEFAULT_MAP_ORDER</span> <span class="k">if</span> <span class="n">step</span> <span class="o">!=</span> <span class="s2">&quot;initial&quot;</span><span class="p">]</span>
 
-<span class="sd">        Args:</span>
-<span class="sd">            parquet_path (str): Path to input Parquet file(s).</span>
+        <span class="c1"># Always start with &#39;initial&#39;</span>
+        <span class="k">if</span> <span class="n">map_order</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+             <span class="c1"># --- Map order setup ---</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Default map order:&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">valid_steps</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">. </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">()</span>
+            
+            <span class="n">user_input</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Enter map order by numbers for steps after &#39;initial&#39;, comma-separated (e.g., 1,3,2), or press Enter for default: &quot;</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">user_input</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">map_order</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;initial&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">valid_steps</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">indices</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">-</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">user_input</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)]</span>
+                    <span class="n">chosen</span> <span class="o">=</span> <span class="p">[</span><span class="n">valid_steps</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">]</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">map_order</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;initial&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">chosen</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid input (</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">), using default order.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">map_order</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;initial&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">valid_steps</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">invalid</span> <span class="o">=</span> <span class="p">[</span><span class="n">step</span> <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">map_order</span> <span class="k">if</span> <span class="n">step</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">valid_steps</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">invalid</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid map step(s) in custom order: </span><span class="si">{</span><span class="n">invalid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">map_order</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;initial&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">map_order</span>
 
-<span class="sd">        Example:</span>
-<span class="sd">            ```python</span>
-<span class="sd">            refiner.refine_map_from_parquet(&quot;reads.parquet&quot;)</span>
-<span class="sd">            refiner.refine_map_from_parquet(&quot;folder/*.parquet&quot;)</span>
-<span class="sd">            ```</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Using the following step order:&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map_order</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">. </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="MapRefiner.show_tables"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.show_tables">[docs]</a>    <span class="k">def</span> <span class="nf">show_tables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">tables</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;SHOW TABLES&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+        <span class="c1"># for table in tables:</span>
+        <span class="c1">#     print(table)</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">tables</span><span class="p">)</span></div>
+    
+    <span class="k">def</span> <span class="nf">_prefixed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">table_name</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add prefix to table names.</span>
+<span class="sd">        - &#39;initial&#39; always uses base prefix.</span>
+<span class="sd">        - &#39;grouped&#39; uses base prefix if previous step in map_order is &#39;initial&#39;,</span>
+<span class="sd">          otherwise uses descriptor prefix.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">create_map1</span><span class="p">(</span><span class="n">parquet_path</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">create_map2</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">create_map3</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">create_map4</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">create_map5</span><span class="p">()</span></div>
+        <span class="k">if</span> <span class="n">table_name</span> <span class="o">==</span> <span class="s2">&quot;initial&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">table_prefix_base</span><span class="si">}{</span><span class="n">table_name</span><span class="si">}</span><span class="s2">&quot;</span>
+    
+        <span class="k">elif</span> <span class="n">table_name</span> <span class="o">==</span> <span class="s2">&quot;grouped&quot;</span><span class="p">:</span>
+            <span class="c1"># Determine the index of &quot;grouped&quot; and check what comes before it</span>
+            <span class="k">if</span> <span class="s2">&quot;grouped&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_order</span><span class="p">:</span>
+                <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_order</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;grouped&quot;</span><span class="p">)</span>
+                <span class="n">prev_step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_order</span><span class="p">[</span><span class="n">idx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">idx</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">prev_step</span> <span class="o">=</span> <span class="kc">None</span>
+    
+            <span class="c1"># If grouped follows &quot;initial&quot;, use base prefix (no descriptor)</span>
+            <span class="k">if</span> <span class="n">prev_step</span> <span class="o">==</span> <span class="s2">&quot;initial&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">table_prefix_base</span><span class="si">}</span><span class="s2">initial_grouped&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">table_prefix_with_descriptor</span><span class="si">}{</span><span class="n">table_name</span><span class="si">}</span><span class="s2">&quot;</span>
+    
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># All other tables use descriptor prefix</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">table_prefix_with_descriptor</span><span class="si">}{</span><span class="n">table_name</span><span class="si">}</span><span class="s2">&quot;</span>
+
+
+    <span class="c1"># -------------------------------</span>
+    <span class="c1"># Table creation functions</span>
+    <span class="c1"># -------------------------------</span>
+
+<div class="viewcode-block" id="MapRefiner.check_exists"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.check_exists">[docs]</a>    <span class="k">def</span> <span class="nf">check_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">check_table_name</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">should_check_exists</span><span class="p">:</span>
+            <span class="c1"># Get list of existing tables</span>
+            <span class="n">existing_tables</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;SHOW TABLES&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
+            
+            <span class="c1"># Only skip if table exists AND ends with &quot;_initial&quot; or &quot;_initial_grouped&quot;</span>
+            <span class="k">if</span> <span class="n">check_table_name</span> <span class="ow">in</span> <span class="n">existing_tables</span> <span class="ow">and</span> <span class="p">(</span>
+                <span class="n">check_table_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_initial&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">check_table_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_initial_grouped&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">check_table_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_loss_table&quot;</span><span class="p">)</span>
+            <span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Skipping — table </span><span class="si">{</span><span class="n">check_table_name</span><span class="si">}</span><span class="s2"> already exists and is initial/grouped.&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+            
+<div class="viewcode-block" id="MapRefiner.create_initial"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.create_initial">[docs]</a>    <span class="nd">@time_it</span>
+    <span class="k">def</span> <span class="nf">create_initial</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parquet_path</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Reading initial map from </span><span class="si">{</span><span class="n">parquet_path</span><span class="si">}</span><span class="s2"> as </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="s1">&#39;initial&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="s1">&#39;initial&#39;</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                CREATE OR REPLACE TABLE </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="s1">&#39;initial&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> AS</span>
+<span class="s2">                SELECT *</span>
+<span class="s2">                FROM read_parquet(&#39;</span><span class="si">{</span><span class="n">parquet_path</span><span class="si">}</span><span class="s2">&#39;)</span>
+<span class="s2">            &quot;&quot;&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MapRefiner.create_quality"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.create_quality">[docs]</a>    <span class="nd">@time_it</span>
+    <span class="k">def</span> <span class="nf">create_quality</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">previous_table</span><span class="o">=</span><span class="s2">&quot;initial&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Keep only rows where all *_qual columns are TRUE.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Filtering to high-quality reads...&quot;</span><span class="p">)</span>
+    
+        <span class="c1"># Start with barcode *_qual columns</span>
+        <span class="n">qual_columns</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2">_qual = TRUE&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cols</span><span class="p">]</span>
         
-<div class="viewcode-block" id="MapRefiner.refine_map_from_db"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.refine_map_from_db">[docs]</a>    <span class="k">def</span> <span class="nf">refine_map_from_db</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run the map refinement pipeline assuming map1 already exists in the database.</span>
-
-<span class="sd">        Example:</span>
-<span class="sd">            ```python</span>
-<span class="sd">            refiner.refine_map_from_db()</span>
-<span class="sd">            ```</span>
+        <span class="c1"># Add UMI *_qual if umi_object exists</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">umi_object</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">qual_columns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">umi_object</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_qual = TRUE&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># Combine into WHERE clause</span>
+        <span class="n">where_clause</span> <span class="o">=</span> <span class="s2">&quot; AND &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">qual_columns</span><span class="p">)</span>
+    
+        <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            CREATE OR REPLACE TABLE </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="s1">&#39;quality&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> AS</span>
+<span class="s2">            SELECT *</span>
+<span class="s2">            FROM </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="n">previous_table</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">            WHERE </span><span class="si">{</span><span class="n">where_clause</span><span class="si">}</span><span class="s2">;</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="p">)</span>
+    
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Created table: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="s1">&#39;quality&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> — filtered for TRUE in all *_qual columns.&quot;</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="MapRefiner.create_designed"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.create_designed">[docs]</a>    <span class="nd">@time_it</span>
+    <span class="k">def</span> <span class="nf">create_designed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">previous_table</span><span class="o">=</span><span class="s2">&quot;quality&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Keep only rows where Designed == 1.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">create_map2</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">create_map3</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">create_map4</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">create_map5</span><span class="p">()</span></div>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Filtering to designed sequences...&quot;</span><span class="p">)</span>
+    
+        <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            CREATE OR REPLACE TABLE </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="s1">&#39;designed&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> AS</span>
+<span class="s2">            SELECT *</span>
+<span class="s2">            FROM </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="n">previous_table</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">            WHERE CAST(Designed AS INTEGER) = 1;</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="p">)</span>
+    
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Created table: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="s1">&#39;designed&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> — kept only Designed == 1.&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MapRefiner.barcode_exists"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.barcode_exists">[docs]</a>    <span class="nd">@time_it</span>
+    <span class="k">def</span> <span class="nf">barcode_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">previous_table</span><span class="o">=</span><span class="s2">&quot;initial&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove rows where any barcode column (except AD) is NULL or an empty string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Removing rows with null or empty barcodes (excluding AD)...&quot;</span><span class="p">)</span>
+        <span class="n">prev_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="n">previous_table</span><span class="p">)</span>
+        <span class="n">output_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="s2">&quot;barcode_exists&quot;</span><span class="p">)</span>
+    
+        <span class="c1"># Filter columns: exclude &#39;AD&#39;</span>
+        <span class="n">barcode_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cols</span> <span class="k">if</span> <span class="n">c</span> <span class="o">!=</span> <span class="s2">&quot;AD&quot;</span><span class="p">]</span>
+    
+        <span class="k">if</span> <span class="n">barcode_cols</span><span class="p">:</span>
+            <span class="c1"># Build condition to detect NULL or empty strings in barcode columns</span>
+            <span class="n">null_empty_condition</span> <span class="o">=</span> <span class="s2">&quot; OR &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2"> IS NULL OR TRIM(</span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2">) = &#39;&#39;&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">barcode_cols</span><span class="p">])</span>
+            <span class="n">where_clause</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;WHERE NOT (</span><span class="si">{</span><span class="n">null_empty_condition</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># No barcode columns to filter</span>
+            <span class="n">where_clause</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    
+        <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            CREATE OR REPLACE TABLE </span><span class="si">{</span><span class="n">output_table</span><span class="si">}</span><span class="s2"> AS</span>
+<span class="s2">            SELECT *</span>
+<span class="s2">            FROM </span><span class="si">{</span><span class="n">prev_table</span><span class="si">}</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">where_clause</span><span class="si">}</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="MapRefiner.create_grouped"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.create_grouped">[docs]</a>    <span class="nd">@time_it</span>
+    <span class="k">def</span> <span class="nf">create_grouped</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">previous_table</span><span class="o">=</span><span class="s2">&quot;quality_designed&quot;</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Grouping </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="n">previous_table</span><span class="p">)</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+
+        <span class="n">grouped_table_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="s1">&#39;grouped&#39;</span><span class="p">)</span>
+        <span class="n">group_cols_sql</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cols</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_exists</span><span class="p">(</span><span class="n">grouped_table_name</span><span class="p">):</span>
+            <span class="n">qual_cols</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2">_qual&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cols</span><span class="p">]</span>
+            <span class="n">qual_cols_sql</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">qual_cols</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;Designed&quot;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                CREATE OR REPLACE TABLE </span><span class="si">{</span><span class="n">grouped_table_name</span><span class="si">}</span><span class="s2"> AS</span>
+<span class="s2">                SELECT </span><span class="si">{</span><span class="n">group_cols_sql</span><span class="si">}</span><span class="s2">,</span>
+<span class="s2">                    COUNT(*) AS count,</span>
+<span class="s2">                    </span><span class="si">{</span><span class="n">qual_cols_sql</span><span class="si">}</span>
+<span class="s2">                FROM </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="n">previous_table</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">                GROUP BY </span><span class="si">{</span><span class="n">group_cols_sql</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">qual_cols_sql</span><span class="si">}</span>
+<span class="s2">                ORDER BY count DESC</span>
+<span class="s2">            &quot;&quot;&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_figures_path</span><span class="p">:</span>
+            <span class="n">sns</span><span class="o">.</span><span class="n">set_style</span><span class="p">(</span><span class="s1">&#39;ticks&#39;</span><span class="p">)</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mf">2.5</span><span class="p">),</span> <span class="n">dpi</span> <span class="o">=</span> <span class="mi">300</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plot_reads_histogram</span><span class="p">(</span><span class="n">grouped_table_name</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="p">,</span> <span class="n">edgecolor</span> <span class="o">=</span> <span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="n">bins</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Grouped &quot;</span> <span class="o">+</span> <span class="n">group_cols_sql</span><span class="p">)</span>
+            
+            <span class="n">grouped_table_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="s1">&#39;grouped&#39;</span><span class="p">)</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_figures_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">grouped_table_name</span><span class="si">}</span><span class="s2">.png&quot;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="MapRefiner.create_thresholded"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.create_thresholded">[docs]</a>    <span class="nd">@time_it</span>
+    <span class="k">def</span> <span class="nf">create_thresholded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">previous_table</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Thresholding...&quot;</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span><span class="p">:</span>    
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">user_input</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Enter minimum read count threshold (default = 5): &quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">user_input</span><span class="p">)</span> <span class="k">if</span> <span class="n">user_input</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span> <span class="k">else</span> <span class="mi">5</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Invalid input. Using default threshold of 5.&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span> <span class="o">=</span> <span class="mi">5</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Using reads threshold of &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_figures_path</span><span class="p">:</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mf">2.5</span><span class="p">),</span> <span class="n">dpi</span> <span class="o">=</span> <span class="mi">300</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plot_reads_histogram</span><span class="p">(</span><span class="n">previous_table</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="p">,</span> <span class="n">edgecolor</span> <span class="o">=</span> <span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="n">bins</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;red&#39;</span><span class="p">)</span>
+            
+            <span class="n">grouped_table_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="s1">&#39;grouped&#39;</span><span class="p">)</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_figures_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="s1">&#39;thresholded&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">.png&quot;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            CREATE OR REPLACE TABLE </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="s1">&#39;thresholded&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> AS</span>
+<span class="s2">            SELECT *</span>
+<span class="s2">            FROM </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="n">previous_table</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">            WHERE count &gt; </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span><span class="si">}</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="p">)</span></div>
+
+    <span class="c1"># ERR CORRECT</span>
+<div class="viewcode-block" id="MapRefiner.generate_fastq_for_whitelist"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.generate_fastq_for_whitelist">[docs]</a>    <span class="nd">@time_it</span>
+    <span class="k">def</span> <span class="nf">generate_fastq_for_whitelist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;_barcodes_extracted.fastq&quot;</span><span class="p">,</span> <span class="n">prev_table</span> <span class="o">=</span> <span class="s2">&quot;quality&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate a synthetic FASTQ file from the filtered previous table, using</span>
+<span class="sd">        concatenated barcode for reads that pass quality checks.</span>
+<span class="sd">    </span>
+<span class="sd">        Args:</span>
+<span class="sd">            output_dir (str or Path, optional): Directory to save the FASTQ. Defaults to current working directory.</span>
+<span class="sd">            suffix (str): Suffix for FASTQ filename.</span>
+<span class="sd">            prev_table (str, optional): Name of the previous DuckDB table to use instead of initial table.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            str: Path to the generated FASTQ file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">con</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">con</span>
+    
+        <span class="c1"># Resolve output directory</span>
+        <span class="k">if</span> <span class="n">output_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">output_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">output_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+            <span class="n">output_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    
+        <span class="c1"># Construct output FASTQ path</span>
+        <span class="n">output_fastq</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">table_prefix</span><span class="si">}</span><span class="s2">filtered</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Generating FASTQ: </span><span class="si">{</span><span class="n">output_fastq</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+        <span class="c1"># Get all barcode and quality column names</span>
+        <span class="n">bc_cols</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cols</span>
+        <span class="n">qual_cols</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_qual&quot;</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">bc_cols</span><span class="p">]</span>
+    
+        <span class="c1"># Build quality filter (require all barcodes to pass length check)</span>
+        <span class="n">qual_filter</span> <span class="o">=</span> <span class="s2">&quot; AND &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">qc</span><span class="si">}</span><span class="s2"> = TRUE&quot;</span> <span class="k">for</span> <span class="n">qc</span> <span class="ow">in</span> <span class="n">qual_cols</span><span class="p">])</span>
+    
+        <span class="c1"># Construct concatenation expression for barcodes (+ optional UMI)</span>
+        <span class="n">concat_expr</span> <span class="o">=</span> <span class="s2">&quot; || &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bc_cols</span><span class="p">)</span>
+    
+        <span class="c1"># Use previous table</span>
+        <span class="n">table_name</span> <span class="o">=</span> <span class="n">prev_table</span> 
+    
+        <span class="c1"># Query the concatenated reads that pass quality checks</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            SELECT </span><span class="si">{</span><span class="n">concat_expr</span><span class="si">}</span><span class="s2"> AS sequence</span>
+<span class="s2">            FROM </span><span class="si">{</span><span class="n">table_name</span><span class="si">}</span>
+<span class="s2">            WHERE </span><span class="si">{</span><span class="n">qual_filter</span><span class="si">}</span><span class="s2">;</span>
+<span class="s2">        &quot;&quot;&quot;</span>
+        <span class="n">seq_df</span> <span class="o">=</span> <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)</span><span class="o">.</span><span class="n">df</span><span class="p">()</span>
+    
+        <span class="c1"># Construct FASTQ records</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">output_fastq</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">seq</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">seq_df</span><span class="p">[</span><span class="s2">&quot;sequence&quot;</span><span class="p">],</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+                <span class="c1"># Dummy FASTQ format: 4 lines per record</span>
+                <span class="c1"># Adding &quot;A&quot; as dummy UMI</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;@read_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="se">\n</span><span class="s2">A</span><span class="si">{</span><span class="n">seq</span><span class="si">}</span><span class="se">\n</span><span class="s2">+</span><span class="se">\n</span><span class="si">{</span><span class="s1">&#39;I&#39;</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Wrote </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">seq_df</span><span class="p">)</span><span class="si">}</span><span class="s2"> reads to </span><span class="si">{</span><span class="n">output_fastq</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">output_fastq</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="MapRefiner.apply_whitelist"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.apply_whitelist">[docs]</a>    <span class="k">def</span> <span class="nf">apply_whitelist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">prev_table</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Apply umi_tools whitelist to previous table: replace barcodes and AD sequences with canonical ones,</span>
+<span class="sd">        then recalculate quality flags and &#39;Designed&#39; based on canonical barcode.</span>
+<span class="sd">        Saves results to a new table prefixed with error_corrected.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">output_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+        <span class="n">output_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">=== Applying whitelist for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2"> ===&quot;</span><span class="p">)</span>
+    
+        <span class="n">table_name</span> <span class="o">=</span> <span class="n">prev_table</span>
+        <span class="n">new_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="s2">&quot;error_corrected&quot;</span><span class="p">)</span>
+    
+        <span class="c1"># Generate FASTQ for whitelist</span>
+        <span class="n">fastq_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_fastq_for_whitelist</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">prev_table</span><span class="o">=</span><span class="n">table_name</span><span class="p">)</span>
+        <span class="n">fastq_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">fastq_path</span><span class="p">)</span>
+    
+        <span class="n">expected_whitelist</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">fastq_path</span><span class="o">.</span><span class="n">stem</span><span class="si">}</span><span class="s2">_whitelist.txt&quot;</span>
+        <span class="n">expected_log</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">fastq_path</span><span class="o">.</span><span class="n">stem</span><span class="si">}</span><span class="s2">_whitelist.log&quot;</span>
+    
+        <span class="c1"># Run or reuse whitelist</span>
+        <span class="k">if</span> <span class="n">expected_whitelist</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="n">expected_log</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Whitelist already exists, skipping:</span><span class="se">\n</span><span class="s2">  </span><span class="si">{</span><span class="n">expected_whitelist</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">whitelist_path</span> <span class="o">=</span> <span class="n">expected_whitelist</span>
+        
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Infer expected_bc_count if needed</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">manual_ec_threshold</span><span class="p">:</span>
+        
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Inferring expected barcode count from grouped reads...&quot;</span><span class="p">)</span>
+        
+                <span class="c1"># Build grouped counts from prev_table</span>
+                <span class="n">group_cols_sql</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cols</span><span class="p">)</span>
+                <span class="n">tmp_grouped</span> <span class="o">=</span> <span class="s2">&quot;__tmp_bc_grouped&quot;</span>
+        
+                <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                    CREATE OR REPLACE TABLE </span><span class="si">{</span><span class="n">tmp_grouped</span><span class="si">}</span><span class="s2"> AS</span>
+<span class="s2">                    SELECT </span><span class="si">{</span><span class="n">group_cols_sql</span><span class="si">}</span><span class="s2">, COUNT(*) AS count</span>
+<span class="s2">                    FROM </span><span class="si">{</span><span class="n">table_name</span><span class="si">}</span>
+<span class="s2">                    GROUP BY </span><span class="si">{</span><span class="n">group_cols_sql</span><span class="si">}</span>
+<span class="s2">                &quot;&quot;&quot;</span><span class="p">)</span>
+        
+                <span class="c1"># Prompt for reads threshold if needed (same behavior as create_thresholded)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_figures_path</span><span class="p">:</span>
+                        <span class="c1"># fig, ax = plt.subplots(figsize=(5, 2.5), dpi=300)</span>
+                        <span class="c1"># self.plot_reads_histogram(tmp_grouped, ax = ax, edgecolor = &#39;none&#39;, bins = 100)</span>
+                        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+                        <span class="n">df_tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SELECT count FROM </span><span class="si">{</span><span class="n">tmp_grouped</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">df</span><span class="p">()</span>
+                        <span class="n">sns</span><span class="o">.</span><span class="n">histplot</span><span class="p">(</span><span class="n">df_tmp</span><span class="p">[</span><span class="s2">&quot;count&quot;</span><span class="p">],</span> <span class="n">bins</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">log_scale</span> <span class="o">=</span> <span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
+                        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Grouped barcode read counts&quot;</span><span class="p">)</span>
+                        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+                        <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_figures_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">tmp_grouped</span><span class="si">}</span><span class="s2">.png&quot;</span><span class="p">)</span>
+                        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+        
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">user_input</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Enter minimum read count threshold (default = 5): &quot;</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">user_input</span><span class="p">)</span> <span class="k">if</span> <span class="n">user_input</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span> <span class="k">else</span> <span class="mi">5</span>
+                    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Invalid input. Using default threshold of 5.&quot;</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span> <span class="o">=</span> <span class="mi">5</span>
+        
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using reads threshold of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+                <span class="c1"># Count how many groups exceed threshold</span>
+                <span class="n">expected_bc_count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                    SELECT COUNT(*)</span>
+<span class="s2">                    FROM </span><span class="si">{</span><span class="n">tmp_grouped</span><span class="si">}</span>
+<span class="s2">                    WHERE count &gt; </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span><span class="si">}</span>
+<span class="s2">                &quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+        
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Inferred expected barcode count: </span><span class="si">{</span><span class="n">expected_bc_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+                <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DROP TABLE IF EXISTS </span><span class="si">{</span><span class="n">tmp_grouped</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Running umi_tools whitelist...&quot;</span><span class="p">)</span>
+                <span class="n">whitelist_outputs</span> <span class="o">=</span> <span class="n">run_whitelist_on_concat_domains</span><span class="p">(</span>
+                    <span class="n">fastq_path</span><span class="o">=</span><span class="n">fastq_path</span><span class="p">,</span>
+                    <span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span><span class="p">,</span>
+                    <span class="n">prefix</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">set_cell_number</span><span class="o">=</span><span class="n">expected_bc_count</span>
+                <span class="p">)</span>
+                <span class="n">whitelist_path</span> <span class="o">=</span> <span class="n">whitelist_outputs</span><span class="p">[</span><span class="s2">&quot;whitelist&quot;</span><span class="p">]</span>
+
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using automatic detection of expected barcode count.&quot;</span><span class="p">)</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Running umi_tools whitelist...&quot;</span><span class="p">)</span>
+                <span class="n">whitelist_outputs</span> <span class="o">=</span> <span class="n">run_whitelist_on_concat_domains</span><span class="p">(</span>
+                    <span class="n">fastq_path</span><span class="o">=</span><span class="n">fastq_path</span><span class="p">,</span>
+                    <span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span><span class="p">,</span>
+                    <span class="n">prefix</span><span class="o">=</span><span class="kc">None</span>
+                <span class="p">)</span>
+                <span class="n">whitelist_path</span> <span class="o">=</span> <span class="n">whitelist_outputs</span><span class="p">[</span><span class="s2">&quot;whitelist&quot;</span><span class="p">]</span>
+
+        
+            
+        <span class="c1"># Load whitelist mapping</span>
+        <span class="n">mapping_df</span> <span class="o">=</span> <span class="n">error_correct</span><span class="o">.</span><span class="n">convert_txt_to_whitelist_mapping_df_from_path</span><span class="p">(</span><span class="n">whitelist_path</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unique canonical barcodes: </span><span class="si">{</span><span class="n">mapping_df</span><span class="p">[</span><span class="s1">&#39;canonical&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">nunique</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+        <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;CREATE OR REPLACE TABLE barcode_map AS SELECT * FROM mapping_df;&quot;</span><span class="p">)</span>
+    
+        <span class="c1"># Join + replace barcodes</span>
+        <span class="n">concat_expr</span> <span class="o">=</span> <span class="s2">&quot; || &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cols</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            CREATE OR REPLACE TABLE </span><span class="si">{</span><span class="n">new_table</span><span class="si">}</span><span class="s2"> AS</span>
+<span class="s2">            SELECT t.*, b.canonical AS concat_canonical</span>
+<span class="s2">            FROM </span><span class="si">{</span><span class="n">table_name</span><span class="si">}</span><span class="s2"> AS t</span>
+<span class="s2">            JOIN barcode_map AS b</span>
+<span class="s2">            ON </span><span class="si">{</span><span class="n">concat_expr</span><span class="si">}</span><span class="s2"> = b.original</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="p">)</span>
+    
+        <span class="n">start_idx</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">bc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bc_objects</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                UPDATE </span><span class="si">{</span><span class="n">new_table</span><span class="si">}</span>
+<span class="s2">                SET </span><span class="si">{</span><span class="n">bc</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> = SUBSTR(concat_canonical, </span><span class="si">{</span><span class="n">start_idx</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">bc</span><span class="o">.</span><span class="n">length</span><span class="si">}</span><span class="s2">)</span>
+<span class="s2">            &quot;&quot;&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                UPDATE </span><span class="si">{</span><span class="n">new_table</span><span class="si">}</span>
+<span class="s2">                SET </span><span class="si">{</span><span class="n">bc</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_qual = LENGTH(</span><span class="si">{</span><span class="n">bc</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">) = </span><span class="si">{</span><span class="n">bc</span><span class="o">.</span><span class="n">length</span><span class="si">}</span>
+<span class="s2">            &quot;&quot;&quot;</span><span class="p">)</span>
+            <span class="n">start_idx</span> <span class="o">+=</span> <span class="n">bc</span><span class="o">.</span><span class="n">length</span>
+    
+        <span class="c1"># Recalculate Designed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            ALTER TABLE </span><span class="si">{</span><span class="n">new_table</span><span class="si">}</span><span class="s2"> DROP COLUMN IF EXISTS Designed;</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">merge_design</span><span class="p">(</span><span class="n">prev_table</span><span class="o">=</span><span class="n">new_table</span><span class="p">)</span>
+    
+        <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            ALTER TABLE </span><span class="si">{</span><span class="n">new_table</span><span class="si">}</span><span class="s2"> DROP COLUMN concat_canonical;</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="p">)</span>
+    
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Whitelist application complete for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2"> at </span><span class="si">{</span><span class="n">new_table</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="MapRefiner.merge_design"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.merge_design">[docs]</a>    <span class="nd">@time_it</span>
+    <span class="k">def</span> <span class="nf">merge_design</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prev_table</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Merge with design file if provided, or create default Designed column.</span>
+<span class="sd">    </span>
+<span class="sd">        Args:</span>
+<span class="sd">            prev_table (str, optional): Name of the DuckDB table to merge design info into.</span>
+<span class="sd">                                         Defaults to `seq` if not provided.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">con</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">con</span>
+        <span class="n">table_to_use</span> <span class="o">=</span> <span class="n">prev_table</span> <span class="ow">or</span> <span class="s2">&quot;seq&quot;</span>
+        <span class="n">target_table</span> <span class="o">=</span> <span class="n">table_to_use</span>  <span class="c1"># output table is now the same as input table</span>
+    
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">design_file</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Merging with design file...&quot;</span><span class="p">)</span>
+            <span class="c1"># Load design file</span>
+            <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                CREATE OR REPLACE TABLE design AS</span>
+<span class="s2">                SELECT CAST(column0 AS VARCHAR) AS AD</span>
+<span class="s2">                FROM read_csv_auto(&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">design_file</span><span class="si">}</span><span class="s2">&#39;, header=False)</span>
+<span class="s2">            &quot;&quot;&quot;</span><span class="p">)</span>
+            <span class="c1"># Merge design info into the table</span>
+            <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                CREATE OR REPLACE TABLE </span><span class="si">{</span><span class="n">target_table</span><span class="si">}</span><span class="s2"> AS</span>
+<span class="s2">                SELECT t.*, CASE WHEN d.AD IS NOT NULL THEN 1 ELSE 0 END AS Designed</span>
+<span class="s2">                FROM </span><span class="si">{</span><span class="n">table_to_use</span><span class="si">}</span><span class="s2"> AS t</span>
+<span class="s2">                LEFT JOIN design AS d USING(AD);</span>
+<span class="s2">            &quot;&quot;&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># No design file, default Designed = 1</span>
+            <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                CREATE OR REPLACE TABLE </span><span class="si">{</span><span class="n">target_table</span><span class="si">}</span><span class="s2"> AS</span>
+<span class="s2">                SELECT *, 1 AS Designed</span>
+<span class="s2">                FROM </span><span class="si">{</span><span class="n">table_to_use</span><span class="si">}</span><span class="s2">;</span>
+<span class="s2">            &quot;&quot;&quot;</span><span class="p">)</span>
+    
+        <span class="c1"># Drop sequence column if present</span>
+        <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;PRAGMA table_info(&#39;</span><span class="si">{</span><span class="n">target_table</span><span class="si">}</span><span class="s2">&#39;)&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;sequence&#39;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">):</span>
+            <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ALTER TABLE </span><span class="si">{</span><span class="n">target_table</span><span class="si">}</span><span class="s2"> DROP COLUMN sequence;&quot;</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="MapRefiner.create_error_corrected"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.create_error_corrected">[docs]</a>    <span class="nd">@time_it</span>
+    <span class="k">def</span> <span class="nf">create_error_corrected</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">previous_table</span><span class="o">=</span><span class="s2">&quot;quality&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Perform error correction by generating a FASTQ from grouped barcodes,</span>
+<span class="sd">        applying umi_tools whitelist, and updating the database with corrected barcodes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">=== Running error correction step on </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="n">previous_table</span><span class="p">)</span><span class="si">}</span><span class="s2"> ===&quot;</span><span class="p">)</span>
+        <span class="n">output_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_figures_path</span> <span class="ow">or</span> <span class="s2">&quot;./error_corrected&quot;</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="c1"># Generate FASTQ + run whitelist-based correction</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">apply_whitelist</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">prev_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="n">previous_table</span><span class="p">))</span>
+            
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;⚠️ Error correction failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MapRefiner.create_unique_target"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.create_unique_target">[docs]</a>    <span class="nd">@time_it</span>
+    <span class="k">def</span> <span class="nf">create_unique_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">previous_table</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        For each (key_cols, target_cols) pair, independently keep keys where the most abundant target </span>
+<span class="sd">        accounts for ≥ self.min_fraction_major_target of reads. Then, keep rows that pass all filters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">frac</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_fraction_major_target</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Filtering so that at least </span><span class="si">{</span><span class="n">frac</span><span class="o">*</span><span class="mi">100</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">% of reads come from the most abundant target...&quot;</span><span class="p">)</span>
+    
+        <span class="n">base_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="n">previous_table</span><span class="p">)</span>
+        <span class="n">filter_tables</span> <span class="o">=</span> <span class="p">[]</span>
+    
+        <span class="c1"># Step 1: build independent filters for each (key, target) mapping</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">key_cols</span><span class="p">,</span> <span class="n">target_cols</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">column_pairs</span><span class="p">):</span>
+            <span class="n">tmp_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;unique_target_step_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">filter_tables</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmp_name</span><span class="p">)</span>
+    
+            <span class="c1"># Build key/target expressions</span>
+            <span class="n">key_expr</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">key_cols</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key_cols</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+                <span class="k">else</span> <span class="s2">&quot; || &#39;-&#39; || &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">key_cols</span><span class="p">])</span>
+            <span class="p">)</span>
+            <span class="n">target_expr</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">target_cols</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target_cols</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+                <span class="k">else</span> <span class="s2">&quot; || &#39;-&#39; || &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">target_cols</span><span class="p">])</span>
+            <span class="p">)</span>
+    
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Processing mapping </span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">key_expr</span><span class="si">}</span><span class="s2"> → </span><span class="si">{</span><span class="n">target_expr</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+            <span class="n">query</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                CREATE OR REPLACE TABLE </span><span class="si">{</span><span class="n">tmp_name</span><span class="si">}</span><span class="s2"> AS</span>
+<span class="s2">                WITH counts AS (</span>
+<span class="s2">                    SELECT </span>
+<span class="s2">                        </span><span class="si">{</span><span class="n">key_expr</span><span class="si">}</span><span class="s2"> AS computed_key,</span>
+<span class="s2">                        </span><span class="si">{</span><span class="n">target_expr</span><span class="si">}</span><span class="s2"> AS computed_target,</span>
+<span class="s2">                        SUM(count) AS cnt</span>
+<span class="s2">                    FROM </span><span class="si">{</span><span class="n">base_table</span><span class="si">}</span>
+<span class="s2">                    GROUP BY computed_key, computed_target</span>
+<span class="s2">                ),</span>
+<span class="s2">                totals AS (</span>
+<span class="s2">                    SELECT </span>
+<span class="s2">                        computed_key,</span>
+<span class="s2">                        SUM(cnt) AS total_cnt,</span>
+<span class="s2">                        MAX(cnt) AS max_cnt</span>
+<span class="s2">                    FROM counts</span>
+<span class="s2">                    GROUP BY computed_key</span>
+<span class="s2">                )</span>
+<span class="s2">                SELECT computed_key</span>
+<span class="s2">                FROM totals</span>
+<span class="s2">                WHERE CAST(max_cnt AS FLOAT) / total_cnt &gt;= </span><span class="si">{</span><span class="n">frac</span><span class="si">}</span><span class="s2">;</span>
+<span class="s2">            &quot;&quot;&quot;</span>
+    
+            <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+    
+        <span class="c1"># Step 2: intersect all filter tables</span>
+        <span class="n">final_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="s2">&quot;unique_target&quot;</span><span class="p">)</span>
+        <span class="n">final_conditions</span> <span class="o">=</span> <span class="p">[]</span>
+    
+        <span class="k">for</span> <span class="n">tbl</span><span class="p">,</span> <span class="p">(</span><span class="n">key_cols</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">filter_tables</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">column_pairs</span><span class="p">):</span>
+            <span class="n">key_expr</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">key_cols</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key_cols</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+                <span class="k">else</span> <span class="s2">&quot; || &#39;-&#39; || &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">key_cols</span><span class="p">])</span>
+            <span class="p">)</span>
+            <span class="n">final_conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key_expr</span><span class="si">}</span><span class="s2"> IN (SELECT computed_key FROM </span><span class="si">{</span><span class="n">tbl</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+    
+        <span class="n">query_final</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            CREATE OR REPLACE TABLE </span><span class="si">{</span><span class="n">final_name</span><span class="si">}</span><span class="s2"> AS</span>
+<span class="s2">            SELECT *</span>
+<span class="s2">            FROM </span><span class="si">{</span><span class="n">base_table</span><span class="si">}</span><span class="s2"> AS base</span>
+<span class="s2">            WHERE </span><span class="si">{</span><span class="s2">&quot; AND &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">final_conditions</span><span class="p">)</span><span class="si">}</span><span class="s2">;</span>
+<span class="s2">        &quot;&quot;&quot;</span>
+    
+        <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query_final</span><span class="p">)</span>
+    
+        <span class="c1"># Step 3: optional cleanup of intermediate tables</span>
+        <span class="k">for</span> <span class="n">tbl</span> <span class="ow">in</span> <span class="n">filter_tables</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DROP TABLE IF EXISTS </span><span class="si">{</span><span class="n">tbl</span><span class="si">}</span><span class="s2">;&quot;</span><span class="p">)</span>
+    
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Created filtered table: </span><span class="si">{</span><span class="n">final_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">final_name</span></div>
+
+
+    <span class="c1"># -------------------------------</span>
+    <span class="c1"># Pipelines</span>
+    <span class="c1"># -------------------------------</span>
+
+<div class="viewcode-block" id="MapRefiner.refine_map_from_db"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.refine_map_from_db">[docs]</a>    <span class="k">def</span> <span class="nf">refine_map_from_db</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">save_name</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">should_check_exists</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">should_check_exists</span> <span class="o">=</span> <span class="kc">False</span>
+        
+        <span class="n">table_to_func</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;initial&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;quality&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_quality</span><span class="p">,</span>
+            <span class="s2">&quot;designed&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_designed</span><span class="p">,</span>
+            <span class="s2">&quot;barcode_exists&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">barcode_exists</span><span class="p">,</span>
+            <span class="s2">&quot;grouped&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_grouped</span><span class="p">,</span>
+            <span class="s2">&quot;error_corrected&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_error_corrected</span><span class="p">,</span>  <span class="c1"># new</span>
+            <span class="s2">&quot;thresholded&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_thresholded</span><span class="p">,</span>
+            <span class="s2">&quot;unique_target&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_unique_target</span>
+        <span class="p">}</span>
+
+        <span class="n">prev_table</span> <span class="o">=</span> <span class="s2">&quot;initial&quot;</span>
+        <span class="k">for</span> <span class="n">table_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_order</span><span class="p">:</span>
+            <span class="n">func</span> <span class="o">=</span> <span class="n">table_to_func</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">table_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">func</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">func</span><span class="p">(</span><span class="n">previous_table</span><span class="o">=</span><span class="n">prev_table</span><span class="p">)</span>
+            <span class="n">prev_table</span> <span class="o">=</span> <span class="n">table_name</span>
+
+        <span class="k">if</span> <span class="n">save_name</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;CREATE OR REPLACE TABLE </span><span class="si">{</span><span class="n">save_name</span><span class="si">}</span><span class="s2"> AS SELECT * FROM </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="n">prev_table</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done.&quot;</span><span class="p">)</span></div>
+            
+    <span class="c1"># -------------------------------</span>
+    <span class="c1"># Table access / saving</span>
+    <span class="c1"># -------------------------------</span>
+<div class="viewcode-block" id="MapRefiner.get_map_df"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.get_map_df">[docs]</a>    <span class="k">def</span> <span class="nf">get_map_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_name</span><span class="p">,</span> <span class="n">insert_prefix</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="n">existing_tables</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;SHOW TABLES&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
+        <span class="n">prefixed_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="n">map_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">prefixed_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">existing_tables</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SELECT * FROM </span><span class="si">{</span><span class="n">map_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">df</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SELECT * FROM </span><span class="si">{</span><span class="n">prefixed_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">df</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="MapRefiner.save_map"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.save_map">[docs]</a>    <span class="k">def</span> <span class="nf">save_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_name</span><span class="p">,</span> <span class="n">map_path</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save a DuckDB table to CSV.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;COPY </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="n">map_name</span><span class="p">)</span><span class="si">}</span><span class="s2"> TO &#39;</span><span class="si">{</span><span class="n">map_path</span><span class="si">}</span><span class="s2">&#39; WITH (HEADER, DELIMITER &#39;,&#39;)&quot;</span><span class="p">)</span></div>
 
-<span class="sd">        Args:</span>
-<span class="sd">            map_name (str): Table name to save.</span>
-<span class="sd">            map_path (str): File path for CSV output.</span>
-
-<span class="sd">        Example:</span>
-<span class="sd">            ```python</span>
-<span class="sd">            refiner.save_map(&quot;map5&quot;, &quot;map5.csv&quot;)</span>
-<span class="sd">            ```</span>
+<div class="viewcode-block" id="MapRefiner.save_loss_table"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.save_loss_table">[docs]</a>    <span class="nd">@time_it</span>
+    <span class="k">def</span> <span class="nf">save_loss_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_csv_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates a table summarizing the counts and losses at each step of the mapping process.</span>
+<span class="sd">    </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        output_csv_path : str or None</span>
+<span class="sd">            If provided, saves the resulting DataFrame as a CSV file at this path.</span>
+<span class="sd">    </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame</span>
+<span class="sd">            DataFrame summarizing unique counts, unique AD counts, total reads,</span>
+<span class="sd">            and percentage losses at each mapping step.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;COPY </span><span class="si">{</span><span class="n">map_name</span><span class="si">}</span><span class="s2"> TO &#39;</span><span class="si">{</span><span class="n">map_path</span><span class="si">}</span><span class="s2">&#39; WITH (HEADER, DELIMITER &#39;,&#39;)&quot;</span><span class="p">)</span></div>
+        <span class="c1"># Mapping step descriptions</span>
+        <span class="n">map_info_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;initial&quot;</span><span class="p">:</span> <span class="s2">&quot;Initial combinations&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;grouped&quot;</span><span class="p">:</span> <span class="s2">&quot;Grouped counts&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;thresholded&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Filtered by # reads &gt; </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;unique_target&quot;</span><span class="p">:</span> <span class="s2">&quot;Filtered for unique targets&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;quality&quot;</span><span class="p">:</span> <span class="s2">&quot;After quality filtering&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;designed&quot;</span><span class="p">:</span> <span class="s2">&quot;After designed filtering&quot;</span><span class="p">,</span>
 
-<div class="viewcode-block" id="MapRefiner.save_loss_table"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.save_loss_table">[docs]</a>    <span class="k">def</span> <span class="nf">save_loss_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_csv_path</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save a loss table of map1-&gt;map5 row counts with descriptive labels and percentages.</span>
-
-<span class="sd">        Percentages include:</span>
-<span class="sd">            - % of previous step</span>
-<span class="sd">            - % of total reads (map1)</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            output_csv_path (str): File path to save CSV.</span>
-
-<span class="sd">        Example:</span>
-<span class="sd">            ```python</span>
-<span class="sd">            refiner.save_map_lengths(&quot;map_lengths.csv&quot;)</span>
-<span class="sd">            ```</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">map_info</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="p">(</span><span class="s2">&quot;map1&quot;</span><span class="p">,</span> <span class="s2">&quot;Total reads&quot;</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">&quot;map2&quot;</span><span class="p">,</span> <span class="s2">&quot;After removing low quality and undesigned&quot;</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">&quot;map3&quot;</span><span class="p">,</span> <span class="s2">&quot;Grouped counts&quot;</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">&quot;map4&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Filtered by reads_threshold &gt; </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">&quot;map5&quot;</span><span class="p">,</span> <span class="s2">&quot;Filtered for unique mappings&quot;</span><span class="p">)</span>
-        <span class="p">]</span>
-
+        <span class="p">}</span>
+    
         <span class="n">lengths</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">existing_tables</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;SHOW TABLES&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
-
-        <span class="k">for</span> <span class="n">table_name</span><span class="p">,</span> <span class="n">description</span> <span class="ow">in</span> <span class="n">map_info</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">table_name</span> <span class="ow">in</span> <span class="n">existing_tables</span><span class="p">:</span>
-                <span class="n">count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SELECT COUNT(*) FROM </span><span class="si">{</span><span class="n">table_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+    
+        <span class="k">for</span> <span class="n">table_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_order</span><span class="p">:</span>
+            <span class="n">prefixed_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="n">table_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">prefixed_name</span> <span class="ow">in</span> <span class="n">existing_tables</span><span class="p">:</span>
+                <span class="c1"># Get unique count</span>
+                <span class="n">unique_count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SELECT COUNT(*) FROM </span><span class="si">{</span><span class="n">prefixed_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+                
+                <span class="c1"># Get column info</span>
+                <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DESCRIBE </span><span class="si">{</span><span class="n">prefixed_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
+                
+                <span class="c1"># Total reads</span>
+                <span class="n">total_reads</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SELECT SUM(count) FROM </span><span class="si">{</span><span class="n">prefixed_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;count&quot;</span> <span class="ow">in</span> <span class="n">columns</span> <span class="k">else</span> <span class="n">unique_count</span>
+                
+                <span class="c1"># Unique AD count</span>
+                <span class="n">unique_AD_count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SELECT COUNT(DISTINCT AD) FROM </span><span class="si">{</span><span class="n">prefixed_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;AD&quot;</span> <span class="ow">in</span> <span class="n">columns</span> <span class="k">else</span> <span class="mi">0</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">count</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="n">lengths</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;map&quot;</span><span class="p">:</span> <span class="n">table_name</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">description</span><span class="p">,</span> <span class="s2">&quot;num_rows&quot;</span><span class="p">:</span> <span class="n">count</span><span class="p">})</span>
-
+                <span class="c1"># Table missing</span>
+                <span class="n">unique_count</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="n">total_reads</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="n">unique_AD_count</span> <span class="o">=</span> <span class="kc">None</span>
+    
+            <span class="c1"># Append info for this step</span>
+            <span class="n">description</span> <span class="o">=</span> <span class="n">map_info_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">table_name</span><span class="p">,</span> <span class="n">table_name</span><span class="p">)</span>
+            <span class="n">lengths</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                <span class="s2">&quot;map&quot;</span><span class="p">:</span> <span class="n">table_name</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">description</span><span class="p">,</span>
+                <span class="s2">&quot;unique_count&quot;</span><span class="p">:</span> <span class="n">unique_count</span><span class="p">,</span>
+                <span class="s2">&quot;unique_AD_count&quot;</span><span class="p">:</span> <span class="n">unique_AD_count</span><span class="p">,</span>
+                <span class="s2">&quot;total_reads&quot;</span><span class="p">:</span> <span class="n">total_reads</span>
+            <span class="p">})</span>
+    
+        <span class="c1"># Build DataFrame</span>
         <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">lengths</span><span class="p">)</span>
-
+    
+        <span class="c1"># Compute percentages</span>
         <span class="n">prev_count</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="n">map1_count</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;map&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;map1&#39;</span><span class="p">,</span> <span class="s1">&#39;num_rows&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">percent_prev</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">percent_map1</span> <span class="o">=</span> <span class="p">[]</span>
-
-        <span class="k">for</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;num_rows&#39;</span><span class="p">]:</span>
-            <span class="k">if</span> <span class="n">count</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">prev_count</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">percent_prev</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">percent_prev</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="n">count</span> <span class="o">/</span> <span class="n">prev_count</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
-            <span class="k">if</span> <span class="n">count</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">map1_count</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">percent_map1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">percent_map1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="n">count</span> <span class="o">/</span> <span class="n">map1_count</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+        <span class="n">map1_count</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;map&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;initial&#39;</span><span class="p">,</span> <span class="s1">&#39;unique_count&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">df</span><span class="o">.</span><span class="n">empty</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">percent_prev</span><span class="p">,</span> <span class="n">percent_map1</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+    
+        <span class="k">for</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;unique_count&#39;</span><span class="p">]:</span>
+            <span class="c1"># % vs previous step</span>
+            <span class="n">percent_prev</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="n">count</span> <span class="o">/</span> <span class="n">prev_count</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="k">if</span> <span class="n">count</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">prev_count</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="c1"># % vs initial</span>
+            <span class="n">percent_map1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="n">count</span> <span class="o">/</span> <span class="n">map1_count</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="k">if</span> <span class="n">count</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">map1_count</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
             <span class="n">prev_count</span> <span class="o">=</span> <span class="n">count</span> <span class="k">if</span> <span class="n">count</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">prev_count</span>
+    
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;</span><span class="si">% o</span><span class="s1">f previous step&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">percent_prev</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;</span><span class="si">% o</span><span class="s1">f total reads&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">percent_map1</span><span class="p">)</span>
+    
+        <span class="c1"># Fill NaNs in percentage columns only</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;</span><span class="si">% o</span><span class="s1">f previous step&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;</span><span class="si">% o</span><span class="s1">f previous step&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;</span><span class="si">% o</span><span class="s1">f total reads&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;</span><span class="si">% o</span><span class="s1">f total reads&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+    
+        <span class="c1"># Save CSV if requested</span>
+        <span class="k">if</span> <span class="n">output_csv_path</span><span class="p">:</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">output_csv_path</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;</span><span class="si">% o</span><span class="s1">f previous step&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">percent_prev</span>
-        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;</span><span class="si">% o</span><span class="s1">f total reads&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">percent_map1</span>
+        
+        <span class="c1"># Save summary table to SQL (overwrite if exists)</span>
+        <span class="n">loss_table_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="s2">&quot;loss_summary&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DROP TABLE IF EXISTS </span><span class="si">{</span><span class="n">loss_table_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;CREATE TABLE </span><span class="si">{</span><span class="n">loss_table_name</span><span class="si">}</span><span class="s2"> AS SELECT * FROM df&quot;</span><span class="p">)</span>
+    
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Saved loss summary table as &#39;</span><span class="si">{</span><span class="n">loss_table_name</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">df</span></div>
 
-        <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">output_csv_path</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div></div>
+    <span class="c1"># -------------------------------</span>
+    <span class="c1"># Plotting functions</span>
+    <span class="c1"># -------------------------------</span>
+<div class="viewcode-block" id="MapRefiner.plot_loss"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.plot_loss">[docs]</a>    <span class="k">def</span> <span class="nf">plot_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="s2">&quot;rocket_r&quot;</span><span class="p">,</span> <span class="n">text_offset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">show_background</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Plot loss across mapping steps showing total reads vs unique counts.</span>
+<span class="sd">        Adds numeric count labels at the end of each bar.</span>
+<span class="sd">    </span>
+<span class="sd">        Args:</span>
+<span class="sd">            save_path (str or None): Optional path to save the plot.</span>
+<span class="sd">            ax (matplotlib.axes.Axes or None): Optional existing axis to draw on.</span>
+<span class="sd">            palette (str): Seaborn color palette name.</span>
+<span class="sd">    </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            matplotlib.axes.Axes: The plotted axis.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Name of saved summary table</span>
+        <span class="n">loss_table_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="s2">&quot;loss_summary&quot;</span><span class="p">)</span>
+    
+        <span class="c1"># Use check_exists() and get_map_df() to get the DataFrame</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_exists</span><span class="p">(</span><span class="n">loss_table_name</span><span class="p">):</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_map_df</span><span class="p">(</span><span class="s2">&quot;loss_summary&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_loss_table</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">plotting</span><span class="o">.</span><span class="n">plot_loss_helper</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
+                                         <span class="n">palette</span><span class="o">=</span><span class="s2">&quot;rocket_r&quot;</span><span class="p">,</span> 
+                                         <span class="n">text_offset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> 
+                                         <span class="n">show_background</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                                         <span class="n">default_map_order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DEFAULT_MAP_ORDER</span><span class="p">,</span> 
+                                         <span class="n">output_figures_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_figures_path</span><span class="p">,</span>
+                                         <span class="n">table_prefix_with_descriptor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">table_prefix_with_descriptor</span><span class="p">,</span> 
+                                         <span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="MapRefiner.plot_reads_histogram"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.plot_reads_histogram">[docs]</a>    <span class="k">def</span> <span class="nf">plot_reads_histogram</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">previous_table</span><span class="p">,</span> <span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">map_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_map_df</span><span class="p">(</span><span class="n">previous_table</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">plotting</span><span class="o">.</span><span class="n">plot_reads_histogram</span><span class="p">(</span><span class="n">map_df</span><span class="p">,</span> <span class="n">save_path</span><span class="o">=</span><span class="n">save_path</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MapRefiner.close_connection"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.close_connection">[docs]</a>    <span class="k">def</span> <span class="nf">close_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">con</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="MapRefiner.plot_error_correction"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.plot_error_correction">[docs]</a>    <span class="nd">@time_it</span>
+    <span class="k">def</span> <span class="nf">plot_error_correction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">save_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Summarize counts of canonical subsequences (barcodes) per AD sequence</span>
+<span class="sd">        from whitelist files, produce a summary table and optional plots.</span>
+<span class="sd">    </span>
+<span class="sd">        Args:</span>
+<span class="sd">            save_dir (str or Path, optional): Directory to save outputs.</span>
+<span class="sd">            plot (bool): Whether to produce plots.</span>
+<span class="sd">    </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            pd.DataFrame: summary table of barcodes with counts and group sizes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">plotting</span><span class="o">.</span><span class="n">plot_error_correction</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_figures_path</span><span class="p">,</span>
+                                              <span class="bp">self</span><span class="o">.</span><span class="n">table_prefix_with_descriptor</span><span class="p">,</span>
+                                              <span class="n">save_dir</span><span class="p">,</span>
+                                              <span class="n">plot</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MapRefiner.plot_all_whitelists_from_summary"><a class="viewcode-back" href="../map_refiner.html#map_refiner.MapRefiner.plot_all_whitelists_from_summary">[docs]</a>    <span class="nd">@time_it</span>
+    <span class="k">def</span> <span class="nf">plot_all_whitelists_from_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">summary_df</span><span class="p">,</span> <span class="n">n_cols</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Plot summaries of multiple barcodes using precomputed summary_df</span>
+<span class="sd">        instead of reading whitelist files again.</span>
+<span class="sd">    </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        summary_df : pd.DataFrame</span>
+<span class="sd">            DataFrame returned from summarize_canonical_subsequences, must contain</span>
+<span class="sd">            columns [&#39;barcode&#39;, &#39;canonical&#39;, &#39;num_merged&#39;, &#39;largest_count&#39;, &#39;rest_count&#39;].</span>
+<span class="sd">        n_cols : int, optional</span>
+<span class="sd">            Number of panels per row. Default is 4.</span>
+<span class="sd">        dpi : int, optional</span>
+<span class="sd">            Figure DPI. Default is 300.</span>
+<span class="sd">    </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        fig : matplotlib.figure.Figure</span>
+<span class="sd">            Figure containing all barcode summaries.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">plotting</span><span class="o">.</span><span class="n">plot_all_whitelists_from_summary</span><span class="p">(</span><span class="n">summary_df</span><span class="p">,</span> <span class="n">n_cols</span><span class="p">,</span> <span class="n">dpi</span><span class="p">)</span></div></div>
+
 </pre></div>
 
           </div>
@@ -300,8 +931,9 @@
 <h3>Navigation</h3>
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../initial_map.html">initial_map module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../map_refiner.html">map_refiner module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../mapping.html">mapping module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../umi_deduplicate.html">umi_deduplicate module</a></li>
 </ul>
 
 <div class="relations">

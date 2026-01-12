@@ -1,0 +1,211 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>umi_deduplicate module &#8212; TREBL  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="map_refiner module" href="map_refiner.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-umi_deduplicate">
+<span id="umi-deduplicate-module"></span><h1>umi_deduplicate module<a class="headerlink" href="#module-umi_deduplicate" title="Permalink to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="umi_deduplicate.UMIDeduplicator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">umi_deduplicate.</span></span><span class="sig-name descname"><span class="pre">UMIDeduplicator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">db_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bc_objects</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">descriptor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step1_map_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fastq_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refined_map_suffix</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/umi_deduplicate.html#UMIDeduplicator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#umi_deduplicate.UMIDeduplicator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Unified UMI Deduplication class combining simple counts and full UMI-tools pipeline.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="umi_deduplicate.UMIDeduplicator.align_sort_and_deduplicate_umis">
+<span class="sig-name descname"><span class="pre">align_sort_and_deduplicate_umis</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/umi_deduplicate.html#UMIDeduplicator.align_sort_and_deduplicate_umis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#umi_deduplicate.UMIDeduplicator.align_sort_and_deduplicate_umis" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="umi_deduplicate.UMIDeduplicator.counts_per_umi">
+<span class="sig-name descname"><span class="pre">counts_per_umi</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/umi_deduplicate.html#UMIDeduplicator.counts_per_umi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#umi_deduplicate.UMIDeduplicator.counts_per_umi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a DataFrame with counts of each UMI per barcode combination.
+Uses the quality_designed table in DuckDB.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="umi_deduplicate.UMIDeduplicator.generate_barcode_fasta_and_index">
+<span class="sig-name descname"><span class="pre">generate_barcode_fasta_and_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'_barcodes'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/umi_deduplicate.html#UMIDeduplicator.generate_barcode_fasta_and_index"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#umi_deduplicate.UMIDeduplicator.generate_barcode_fasta_and_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save all unique concatenated barcodes as a new table,
+concatenating multiple columns with no separator.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="umi_deduplicate.UMIDeduplicator.generate_fastq">
+<span class="sig-name descname"><span class="pre">generate_fastq</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'_umi_extracted.fastq'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/umi_deduplicate.html#UMIDeduplicator.generate_fastq"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#umi_deduplicate.UMIDeduplicator.generate_fastq" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a FASTQ from self.table_prefix.initial:
+- Read sequence = concatenated barcode columns
+- Read ID = UMI
+- Keep all rows (no deduplication)
+- Tracks progress using tqdm</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="umi_deduplicate.UMIDeduplicator.merge_complex_with_step1_map">
+<span class="sig-name descname"><span class="pre">merge_complex_with_step1_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/umi_deduplicate.html#UMIDeduplicator.merge_complex_with_step1_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#umi_deduplicate.UMIDeduplicator.merge_complex_with_step1_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge the UMI-tools deduplicated counts CSV with the step1 map on barcode columns.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="umi_deduplicate.UMIDeduplicator.merge_simple_with_step1_map">
+<span class="sig-name descname"><span class="pre">merge_simple_with_step1_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/umi_deduplicate.html#UMIDeduplicator.merge_simple_with_step1_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#umi_deduplicate.UMIDeduplicator.merge_simple_with_step1_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs an inner merge of the current table with step1_map_name
+on the barcode columns (self.cols) and returns the result as a DataFrame.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="umi_deduplicate.UMIDeduplicator.run_both_deduplications">
+<span class="sig-name descname"><span class="pre">run_both_deduplications</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/umi_deduplicate.html#UMIDeduplicator.run_both_deduplications"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#umi_deduplicate.UMIDeduplicator.run_both_deduplications" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="umi_deduplicate.UMIDeduplicator.run_simple_deduplication">
+<span class="sig-name descname"><span class="pre">run_simple_deduplication</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/umi_deduplicate.html#UMIDeduplicator.run_simple_deduplication"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#umi_deduplicate.UMIDeduplicator.run_simple_deduplication" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="umi_deduplicate.UMIDeduplicator.run_umi_tools_deduplication">
+<span class="sig-name descname"><span class="pre">run_umi_tools_deduplication</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/umi_deduplicate.html#UMIDeduplicator.run_umi_tools_deduplication"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#umi_deduplicate.UMIDeduplicator.run_umi_tools_deduplication" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="umi_deduplicate.UMIDeduplicator.save_simple_deduplication">
+<span class="sig-name descname"><span class="pre">save_simple_deduplication</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/umi_deduplicate.html#UMIDeduplicator.save_simple_deduplication"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#umi_deduplicate.UMIDeduplicator.save_simple_deduplication" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="umi_deduplicate.UMIDeduplicator.show_tables">
+<span class="sig-name descname"><span class="pre">show_tables</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/umi_deduplicate.html#UMIDeduplicator.show_tables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#umi_deduplicate.UMIDeduplicator.show_tables" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="umi_deduplicate.UMIDeduplicator.unique_umis_per_barcodes">
+<span class="sig-name descname"><span class="pre">unique_umis_per_barcodes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/umi_deduplicate.html#UMIDeduplicator.unique_umis_per_barcodes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#umi_deduplicate.UMIDeduplicator.unique_umis_per_barcodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Counts unique UMIs per barcode(s), keeping the original columns distinct.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="umi_deduplicate.fastp_summary_df">
+<span class="sig-prename descclassname"><span class="pre">umi_deduplicate.</span></span><span class="sig-name descname"><span class="pre">fastp_summary_df</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_dir</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/umi_deduplicate.html#fastp_summary_df"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#umi_deduplicate.fastp_summary_df" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="umi_deduplicate.run_fastp">
+<span class="sig-prename descclassname"><span class="pre">umi_deduplicate.</span></span><span class="sig-name descname"><span class="pre">run_fastp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">script_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../savio_jobs/fastp.sh'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/umi_deduplicate.html#run_fastp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#umi_deduplicate.run_fastp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run fastp on all .fastq.gz files in input_dir. Outputs as .fastq files.
+Submit the existing fastp.sh script as a SLURM array job.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_dir</strong> (<em>str</em>) – Path to folder containing .fastq.gz files</p></li>
+<li><p><strong>output_dir</strong> (<em>str</em>) – Path to folder where output should be written</p></li>
+<li><p><strong>script_path</strong> (<em>str</em>) – Path to the existing fastp.sh script</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">TREBL</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="initial_map.html">initial_map module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="map_refiner.html">map_refiner module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">umi_deduplicate module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="map_refiner.html" title="previous chapter">map_refiner module</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2025, Sanjana Kotha.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/umi_deduplicate.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
