@@ -232,14 +232,13 @@
           <h1>Source code for error_correct</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">ThreadPoolExecutor</span><span class="p">,</span> <span class="n">as_completed</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">preprocess</span><span class="w"> </span><span class="kn">import</span> <span class="n">time_it</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scripts.preprocess</span><span class="w"> </span><span class="kn">import</span> <span class="n">time_it</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">seaborn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sns</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">Bio.Seq</span><span class="w"> </span><span class="kn">import</span> <span class="n">Seq</span>
-
 
 <span class="n">conda_env</span><span class="o">=</span><span class="s1">&#39;/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/conda/umi_tools/&#39;</span>
 

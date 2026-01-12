@@ -8,11 +8,11 @@ import warnings
 warnings.filterwarnings("ignore")
 import matplotlib.cm as cm
 from pathlib import Path
-import plotting
+from scripts import plotting
 import os
-from preprocess import time_it
-from error_correct import run_whitelist_on_concat_domains
-import error_correct
+from scripts.preprocess import time_it
+from scripts.error_correct import run_whitelist_on_concat_domains
+from scripts import error_correct
 
 class MapRefiner:
     """

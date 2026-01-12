@@ -1,13 +1,12 @@
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from preprocess import time_it
+from scripts.preprocess import time_it
 from pathlib import Path
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
 import seaborn as sns
 from Bio.Seq import Seq
-
 
 conda_env='/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/conda/umi_tools/'
 

@@ -235,8 +235,8 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>           <span class="c1"># For numerical operations (e.g., np.round, np.isfinite)</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">seaborn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sns</span>        <span class="c1"># For plotting (barplot, styling)</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>  <span class="c1"># For figure creation and customization</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">preprocess</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">finder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scripts</span><span class="w"> </span><span class="kn">import</span> <span class="n">preprocess</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scripts</span><span class="w"> </span><span class="kn">import</span> <span class="n">finder</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
@@ -247,8 +247,8 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
 <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;MPLBACKEND&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Agg&quot;</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">preprocess</span><span class="w"> </span><span class="kn">import</span> <span class="n">time_it</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">error_correct</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scripts.preprocess</span><span class="w"> </span><span class="kn">import</span> <span class="n">time_it</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scripts</span><span class="w"> </span><span class="kn">import</span> <span class="n">error_correct</span>
 
 <div class="viewcode-block" id="UMIDeduplicator">
 <a class="viewcode-back" href="../umi_deduplicate.html#umi_deduplicate.UMIDeduplicator">[docs]</a>

@@ -3,8 +3,8 @@ import pandas as pd          # For DataFrame manipulation
 import numpy as np           # For numerical operations (e.g., np.round, np.isfinite)
 import seaborn as sns        # For plotting (barplot, styling)
 import matplotlib.pyplot as plt  # For figure creation and customization
-import preprocess
-import finder
+from scripts import preprocess
+from scripts import finder
 import tempfile
 import os
 import re
@@ -15,8 +15,8 @@ from pathlib import Path
 import subprocess
 os.environ["MPLBACKEND"] = "Agg"
 from tqdm import tqdm
-from preprocess import time_it
-import error_correct
+from scripts.preprocess import time_it
+from scripts import error_correct
 
 class UMIDeduplicator:
     """

@@ -1,6 +1,6 @@
 from pathlib import Path
 import duckdb
-from preprocess import time_it   
+from scripts.preprocess import time_it   
 
 class InitialMapper:
     """
