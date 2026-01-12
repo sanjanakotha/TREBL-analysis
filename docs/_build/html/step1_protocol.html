@@ -1,15 +1,15 @@
 <!doctype html>
-<html class="no-js" lang="en" data-content_root="../">
+<html class="no-js" lang="en" data-content_root="./">
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html">
+<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html">
 
     <!-- Generated with Sphinx 9.0.4 and Furo 2025.12.19 -->
-        <title>Examples - TREBL documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+        <title>Step 1 Protocol - TREBL documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
     
     
 
@@ -161,7 +161,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">TREBL  documentation</div></a>
+      <a href="index.html"><div class="brand">TREBL  documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -172,7 +172,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
@@ -180,21 +180,24 @@
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
       
-      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
   <span class="sidebar-brand-text">TREBL  documentation</span>
   
-</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+  <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../initial_map.html">initial_map module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../map_refiner.html">map_refiner module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../umi_deduplicate.html">umi_deduplicate module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="initial_map.html">initial_map module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="map_refiner.html">map_refiner module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="umi_deduplicate.html">umi_deduplicate module</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
 </ul>
 
 </div>
@@ -215,7 +218,7 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="../_sources/.ipynb_checkpoints/examples-checkpoint.rst.txt" title="View this page">
+  <a class="muted-link" href="_sources/step1_protocol.rst.txt" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
@@ -228,57 +231,21 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="examples">
-<h1>Examples<a class="headerlink" href="#examples" title="Link to this heading">¶</a></h1>
-<p>Here is an example workflow using TREBL-scripts.</p>
-<section id="preliminary-mapping">
-<h2>Preliminary Mapping<a class="headerlink" href="#preliminary-mapping" title="Link to this heading">¶</a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">mapping</span><span class="w"> </span><span class="kn">import</span> <span class="n">BarcodeMapper</span>
-
-<span class="c1"># Intialize map object</span>
-<span class="n">mapper</span> <span class="o">=</span> <span class="n">BarcodeMapper</span><span class="p">(</span><span class="n">seq_file</span> <span class="o">=</span> <span class="s1">&#39;/global/scratch/projects/fc_mvslab/data/sequencing/CZB_Feb2024/A10_A11/results/A10_1_sequences.txt&#39;</span><span class="p">,</span>
-    <span class="n">design_file_path</span> <span class="o">=</span> <span class="s2">&quot;/global/scratch/projects/fc_mvslab/OpenProjects/EChase/TREBLEseq_ismaybethenewcibername/A10_sequencing/v2/current/a10_designfile.csv&quot;</span><span class="p">,</span>
-    <span class="n">bc_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;AD&quot;</span><span class="p">,</span> <span class="s2">&quot;AD_BC&quot;</span><span class="p">,</span> <span class="s2">&quot;RPTR_BC&quot;</span><span class="p">],</span>
-    <span class="n">preceders</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;GGCTAGC&quot;</span><span class="p">,</span> <span class="s2">&quot;CGCGCC&quot;</span><span class="p">,</span> <span class="s2">&quot;CTCGAG&quot;</span><span class="p">],</span>
-    <span class="n">posts</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">],</span>
-    <span class="n">lengths</span> <span class="o">=</span> <span class="p">[</span><span class="mi">120</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">14</span><span class="p">],</span>
-    <span class="n">reverse_complement</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
-
-<span class="c1"># Create map</span>
-<span class="n">mapped_df</span> <span class="o">=</span> <span class="n">mapper</span><span class="o">.</span><span class="n">create_map</span><span class="p">()</span>
-
-<span class="c1"># Save map to parquet (slow for big datasets)</span>
-<span class="n">mapped_df</span><span class="o">.</span><span class="n">save_parquet</span><span class="p">(</span><span class="s1">&#39;/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/SK_CURRENT_A10_1_tbcRAW_v2.parquet&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-</section>
-<section id="refining-the-map">
-<h2>Refining the Map<a class="headerlink" href="#refining-the-map" title="Link to this heading">¶</a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">map_refiner</span><span class="w"> </span><span class="kn">import</span> <span class="n">MapRefiner</span>
-
-<span class="c1"># Initialize refiner object</span>
-<span class="n">refiner</span> <span class="o">=</span> <span class="n">MapRefiner</span><span class="p">(</span><span class="n">db_path</span> <span class="o">=</span> <span class="s2">&quot;/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/duckdb/analysis_test.db&quot;</span><span class="p">,</span>
-    <span class="n">cols</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;AD&quot;</span><span class="p">,</span> <span class="s2">&quot;AD_BC&quot;</span><span class="p">,</span> <span class="s2">&quot;RPTR_BC&quot;</span><span class="p">],</span>
-    <span class="n">reads_threshold</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
-    <span class="n">column_pairs</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;AD&quot;</span><span class="p">,</span> <span class="s2">&quot;AD_BC&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;AD_BC&quot;</span><span class="p">,</span> <span class="s2">&quot;RPTR_BC&quot;</span><span class="p">)])</span> <span class="c1"># AD_BC maps to 1 AD, RPTR_BC matches to 1 AD_BC</span>
-
-<span class="c1"># Refine map starting with desired parquet file(s)</span>
-<span class="n">refiner</span><span class="o">.</span><span class="n">refine_map_from_parquet</span><span class="p">(</span><span class="s1">&#39;/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/SK_CURRENT_A10_1_tbcRAW_v2.parquet/*.parquet&#39;</span><span class="p">)</span>
-
-<span class="c1"># Save the final map</span>
-<span class="n">refiner</span><span class="o">.</span><span class="n">save_map</span><span class="p">(</span><span class="s2">&quot;map5&quot;</span><span class="p">,</span> <span class="s2">&quot;final_map.csv&quot;</span><span class="p">)</span>
-
-<span class="c1"># Save a loss table</span>
-<span class="n">loss_table</span> <span class="o">=</span> <span class="n">LossTable</span><span class="p">(</span><span class="n">db_path</span> <span class="o">=</span> <span class="s2">&quot;/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/duckdb/analysis_test.db&quot;</span><span class="p">,</span>
-                 <span class="n">cols</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;AD&quot;</span><span class="p">,</span> <span class="s2">&quot;AD_BC&quot;</span><span class="p">,</span> <span class="s2">&quot;RPTR_BC&quot;</span><span class="p">])</span>
-</pre></div>
-</div>
-</section>
+          <section id="step-1-protocol">
+<h1>Step 1 Protocol<a class="headerlink" href="#step-1-protocol" title="Link to this heading">¶</a></h1>
+<p>This page describes Step 1 of the protocol.</p>
+<p>## Subsection example</p>
+<p>Describe the protocol steps here.</p>
+<ol class="arabic simple">
+<li><p>Do this first</p></li>
+<li><p>Then do that</p></li>
+<li><p>Etc.</p></li>
+</ol>
 </section>
 
         </article>
@@ -306,35 +273,15 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">Examples</a><ul>
-<li><a class="reference internal" href="#preliminary-mapping">Preliminary Mapping</a></li>
-<li><a class="reference internal" href="#refining-the-map">Refining the Map</a></li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=5929fcd5"></script>
-    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
-    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
-    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+</div><script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/scripts/furo.js?v=46bd48cc"></script>
     </body>
 </html>
