@@ -12,8 +12,10 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../scripts'))  # path from docs/conf.py to your scripts
 
+ROOT = os.path.abspath('..')
+sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, 'scripts'))
 
 # -- Project information -----------------------------------------------------
 
