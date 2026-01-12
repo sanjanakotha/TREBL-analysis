@@ -31,26 +31,33 @@ class MapRefiner:
     ]
 
 
-    def __init__(self, db_path, bc_objects, column_pairs, should_check_exists, 
-                 design_check, reads_threshold=None, map_order=None, step_name="", 
-                 descriptor="", design_file = None, plot_histograms=True, 
-                 output_figures_path=None, min_fraction = 0.9, expected_bc_count = None):
+    def __init__(self, 
+                 db_path, 
+                 bc_objects, 
+                 column_pairs, 
+                 reads_threshold,
+                 map_order=None,
+                 step_name="", 
+                 descriptor="", 
+                 design_file = None, 
+                 output_figures_path=None, 
+                 min_fraction_major_target = 0.9,  
+                 manual_ec_threshold = True, 
+                 umi_object = None):
         
         self.db_path = db_path
         self.con = duckdb.connect(self.db_path)
-        self.bc_objects = bc_objects
-        self.cols = [bc_object.name for bc_object in bc_objects]
+        self.bc_objects = [bc for bc in bc_objects]
+        self.cols = [bc.name for bc in self.bc_objects]
         self.column_pairs = column_pairs
-        self.design_check = design_check
         self.reads_threshold = reads_threshold
         self.step_name = step_name
         self.descriptor = descriptor
         self.design_file = design_file
-        self.plot_histograms = plot_histograms
         self.output_figures_path = output_figures_path
-        self.should_check_exists = should_check_exists
-        self.min_fraction = min_fraction
-        self.expected_bc_count = expected_bc_count
+        self.min_fraction_major_target = min_fraction_major_target
+        self.manual_ec_threshold = manual_ec_threshold
+        self.umi_object = umi_object
 
         cols_str = "_".join(self.cols)
         self.table_prefix = f"{step_name}_{cols_str}_"
@@ -175,24 +182,6 @@ class MapRefiner:
                 FROM read_parquet('{parquet_path}')
             """)
 
-    # @time_it
-    # def create_quality_designed(self, previous_table="initial"):
-    #     print("Filtering to quality and designed...")
-        
-    #     # Keep only rows where all *_qual columns are TRUE
-    #     where_clause = " AND ".join([f"{c}_qual = TRUE" for c in self.cols])
-    
-    #     # Require Designed == 1 (string or int safe)
-    #     designed_filter = " AND CAST(Designed AS INTEGER) = 1" if self.design_check else ""
-    
-    #     self.con.execute(f"""
-    #         CREATE OR REPLACE TABLE {self._prefixed('quality_designed')} AS
-    #         SELECT *
-    #         FROM {self._prefixed(previous_table)}
-    #         WHERE {where_clause}
-    #         {designed_filter}
-    #     """)
-
     @time_it
     def create_quality(self, previous_table="initial"):
         """
@@ -200,8 +189,15 @@ class MapRefiner:
         """
         print("\nFiltering to high-quality reads...")
     
-        # Build WHERE clause using the known barcode names
-        where_clause = " AND ".join([f"{c}_qual = TRUE" for c in self.cols])
+        # Start with barcode *_qual columns
+        qual_columns = [f"{c}_qual = TRUE" for c in self.cols]
+        
+        # Add UMI *_qual if umi_object exists
+        if self.umi_object is not None:
+            qual_columns.append(f"{self.umi_object.name}_qual = TRUE")
+        
+        # Combine into WHERE clause
+        where_clause = " AND ".join(qual_columns)
     
         self.con.execute(f"""
             CREATE OR REPLACE TABLE {self._prefixed('quality')} AS
@@ -275,16 +271,15 @@ class MapRefiner:
                 ORDER BY count DESC
             """)
 
-        if self.plot_histograms:
+        if self.output_figures_path:
             sns.set_style('ticks')
             fig, ax = plt.subplots(figsize = (5,2.5), dpi = 300)
             self.plot_reads_histogram(grouped_table_name, ax = ax, edgecolor = 'none', bins = 100)
             plt.title("Grouped " + group_cols_sql)
             
-            if self.output_figures_path:
-                grouped_table_name = self._prefixed('grouped')
-                filename = os.path.join(self.output_figures_path, f"{grouped_table_name}.png")
-                plt.savefig(filename, bbox_inches="tight")
+            grouped_table_name = self._prefixed('grouped')
+            filename = os.path.join(self.output_figures_path, f"{grouped_table_name}.png")
+            plt.savefig(filename, bbox_inches="tight")
 
             plt.show()
 
@@ -302,15 +297,14 @@ class MapRefiner:
         
         print("Using reads threshold of " + str(self.reads_threshold) + ".")
 
-        if self.plot_histograms:
+        if self.output_figures_path:
             fig, ax = plt.subplots(figsize = (5,2.5), dpi = 300)
             self.plot_reads_histogram(previous_table, ax = ax, edgecolor = 'none', bins = 100)
             ax.axvline(self.reads_threshold, color = 'red')
-
-            if self.output_figures_path:
-                grouped_table_name = self._prefixed('grouped')
-                filename = os.path.join(self.output_figures_path, f"{self._prefixed('thresholded')}.png")
-                plt.savefig(filename, bbox_inches="tight")
+            
+            grouped_table_name = self._prefixed('grouped')
+            filename = os.path.join(self.output_figures_path, f"{self._prefixed('thresholded')}.png")
+            plt.savefig(filename, bbox_inches="tight")
 
             plt.show()
 
@@ -380,62 +374,113 @@ class MapRefiner:
         print(f"Wrote {len(seq_df)} reads to {output_fastq}")
         return str(output_fastq)
     
-    
     def apply_whitelist(self, output_dir, prev_table=None):
         """
         Apply umi_tools whitelist to previous table: replace barcodes and AD sequences with canonical ones,
         then recalculate quality flags and 'Designed' based on canonical barcode.
         Saves results to a new table prefixed with error_corrected.
-    
-        Args:
-            output_dir (str or Path): Directory where FASTQ / outputs will be saved.
-            prev_table (str, optional): Name of previous DuckDB table to use instead of initial.
         """
         output_dir = Path(output_dir).resolve()
         output_dir.mkdir(exist_ok=True)
     
         print(f"\n=== Applying whitelist for {self.step_name} ===")
     
-        # Use previous table or default initial table
-        table_name = prev_table #or f"{self.table_prefix}initial"
+        table_name = prev_table
         new_table = self._prefixed("error_corrected")
     
         # Generate FASTQ for whitelist
         fastq_path = self.generate_fastq_for_whitelist(output_dir, prev_table=table_name)
         fastq_path = Path(fastq_path)
     
-        # Run umi_tools whitelist
         expected_whitelist = output_dir / f"{fastq_path.stem}_whitelist.txt"
         expected_log = output_dir / f"{fastq_path.stem}_whitelist.log"
-               
+    
+        # Run or reuse whitelist
         if expected_whitelist.exists() and expected_log.exists():
             print(f"Whitelist already exists, skipping:\n  {expected_whitelist}")
             whitelist_path = expected_whitelist
-        elif self.expected_bc_count:
-            print("Running umi_tools whitelist...")
-            whitelist_outputs = run_whitelist_on_concat_domains(
-                fastq_path=fastq_path,
-                output_dir=output_dir,
-                prefix=None,
-                set_cell_number = self.expected_bc_count
-            )
+        
         else:
-            print("Running umi_tools whitelist...")
-            whitelist_outputs = run_whitelist_on_concat_domains(
-                fastq_path=fastq_path,
-                output_dir=output_dir,
-                prefix=None
-            )
-            whitelist_path = whitelist_outputs["whitelist"]
-    
-       # Step 3: load mapping_df
+            # Infer expected_bc_count if needed
+            if self.manual_ec_threshold:
+        
+                print("Inferring expected barcode count from grouped reads...")
+        
+                # Build grouped counts from prev_table
+                group_cols_sql = ", ".join(self.cols)
+                tmp_grouped = "__tmp_bc_grouped"
+        
+                self.con.execute(f"""
+                    CREATE OR REPLACE TABLE {tmp_grouped} AS
+                    SELECT {group_cols_sql}, COUNT(*) AS count
+                    FROM {table_name}
+                    GROUP BY {group_cols_sql}
+                """)
+        
+                # Prompt for reads threshold if needed (same behavior as create_thresholded)
+                if not self.reads_threshold:
+                    if self.output_figures_path:
+                        # fig, ax = plt.subplots(figsize=(5, 2.5), dpi=300)
+                        # self.plot_reads_histogram(tmp_grouped, ax = ax, edgecolor = 'none', bins = 100)
+                        fig, ax = plt.subplots(figsize=(5, 2.5), dpi=300)
+                        df_tmp = self.con.execute(f"SELECT count FROM {tmp_grouped}").df()
+                        sns.histplot(df_tmp["count"], bins=100, ax=ax, log_scale = (True, True))
+                        plt.title("Grouped barcode read counts")
+                        plt.show()
+
+                        filename = os.path.join(self.output_figures_path, f"{tmp_grouped}.png")
+                        plt.savefig(filename, bbox_inches="tight")
+        
+                    try:
+                        user_input = input("Enter minimum read count threshold (default = 5): ")
+                        self.reads_threshold = int(user_input) if user_input.strip() != "" else 5
+                    except ValueError:
+                        print("Invalid input. Using default threshold of 5.")
+                        self.reads_threshold = 5
+        
+                print(f"Using reads threshold of {self.reads_threshold}")
+        
+                # Count how many groups exceed threshold
+                expected_bc_count = self.con.execute(f"""
+                    SELECT COUNT(*)
+                    FROM {tmp_grouped}
+                    WHERE count > {self.reads_threshold}
+                """).fetchone()[0]
+        
+                print(f"Inferred expected barcode count: {expected_bc_count}")
+        
+                self.con.execute(f"DROP TABLE IF EXISTS {tmp_grouped}")
+
+                print("Running umi_tools whitelist...")
+                whitelist_outputs = run_whitelist_on_concat_domains(
+                    fastq_path=fastq_path,
+                    output_dir=output_dir,
+                    prefix=None,
+                    set_cell_number=expected_bc_count
+                )
+                whitelist_path = whitelist_outputs["whitelist"]
+
+
+            else:
+                print(f"Using automatic detection of expected barcode count.")
+
+                print("Running umi_tools whitelist...")
+                whitelist_outputs = run_whitelist_on_concat_domains(
+                    fastq_path=fastq_path,
+                    output_dir=output_dir,
+                    prefix=None
+                )
+                whitelist_path = whitelist_outputs["whitelist"]
+
+        
+            
+        # Load whitelist mapping
         mapping_df = error_correct.convert_txt_to_whitelist_mapping_df_from_path(whitelist_path)
-        print(f"Unique canonical barcodes: {len(mapping_df['canonical'].unique())}")
+        print(f"Unique canonical barcodes: {mapping_df['canonical'].nunique()}")
     
-        # Step 4: push mapping_df to DuckDB
         self.con.execute("CREATE OR REPLACE TABLE barcode_map AS SELECT * FROM mapping_df;")
     
-        # Step 5: join prev_table to mapping_df on concatenated barcodes (filters unmatched reads)
+        # Join + replace barcodes
         concat_expr = " || ".join(self.cols)
         self.con.execute(f"""
             CREATE OR REPLACE TABLE {new_table} AS
@@ -445,35 +490,30 @@ class MapRefiner:
             ON {concat_expr} = b.original
         """)
     
-        # Step 6: update individual barcode columns with canonical subsequences
         start_idx = 0
         for bc in self.bc_objects:
-            end_idx = start_idx + bc.length
             self.con.execute(f"""
                 UPDATE {new_table}
                 SET {bc.name} = SUBSTR(concat_canonical, {start_idx + 1}, {bc.length})
             """)
-            # recalc quality
             self.con.execute(f"""
                 UPDATE {new_table}
                 SET {bc.name}_qual = LENGTH({bc.name}) = {bc.length}
             """)
-            start_idx = end_idx
-
-        # Step 7a: drop existing Designed column if it exists
+            start_idx += bc.length
+    
+        # Recalculate Designed
         self.con.execute(f"""
             ALTER TABLE {new_table} DROP COLUMN IF EXISTS Designed;
         """)
-    
-
-        # Step 7: recalc Designed using canonical AD column
         self.merge_design(prev_table=new_table)
     
-        # Step 8: drop temporary concat_canonical
-        self.con.execute(f"ALTER TABLE {new_table} DROP COLUMN concat_canonical;")
+        self.con.execute(f"""
+            ALTER TABLE {new_table} DROP COLUMN concat_canonical;
+        """)
     
         print(f"Whitelist application complete for {self.step_name} at {new_table}")
-
+    
     @time_it
     def merge_design(self, prev_table=None):
         """
@@ -532,66 +572,13 @@ class MapRefiner:
         except Exception as e:
             print(f"⚠️ Error correction failed: {e}")
 
-
-    # @time_it
-    # def create_unique_target(self, previous_table):
-    #     print("Filtering keys to keep only those mapping to a single target...")
-    
-    #     previous_table = self._prefixed(previous_table)
-    #     tmp_tables = []
-    
-    #     for i, (key_cols, target_cols) in enumerate(self.column_pairs):
-    #         tmp_table = self._prefixed(f"tmp_map4_{i}")
-    #         tmp_tables.append(tmp_table)
-    
-    #         # Single or multi-column key
-    #         if isinstance(key_cols, str):
-    #             key_expr = f"{key_cols}"
-    #         else:
-    #             key_expr = " || '-' || ".join([f"{c}" for c in key_cols])
-    
-    #         # Single or multi-column target
-    #         if isinstance(target_cols, str):
-    #             target_expr = f"{target_cols}"
-    #         else:
-    #             target_expr = " || '-' || ".join([f"{c}" for c in target_cols])
-
-    #         print(f"\tChecking each {key_expr} only maps to one {target_expr}.")
-            
-    #         query = f"""
-    #              CREATE OR REPLACE TABLE {tmp_table} AS
-    #             SELECT *
-    #             FROM {previous_table}
-    #             WHERE {key_expr} IN (
-    #                 SELECT {key_expr}
-    #                 FROM {previous_table}
-    #                 GROUP BY {key_expr}
-    #                 HAVING COUNT(DISTINCT {target_expr}) = 1
-    #             )
-    #         """            
-    #         # Only keep keys that map to exactly one target
-    #         self.con.execute(query)
-    
-    #         previous_table = tmp_table
-    
-    #     # Finalize
-    #     self.con.execute(f"""
-    #         CREATE OR REPLACE TABLE {self._prefixed('unique_target')} AS
-    #         SELECT * FROM {previous_table};
-    #     """)
-    
-    #     # Cleanup
-    #     for t in tmp_tables:
-    #         self.con.execute(f"DROP TABLE IF EXISTS {t};")
-    
-
     @time_it
     def create_unique_target(self, previous_table):
         """
         For each (key_cols, target_cols) pair, independently keep keys where the most abundant target 
-        accounts for ≥ self.min_fraction of reads. Then, keep rows that pass all filters.
+        accounts for ≥ self.min_fraction_major_target of reads. Then, keep rows that pass all filters.
         """
-        frac = self.min_fraction
+        frac = self.min_fraction_major_target
         print(f"Filtering so that at least {frac*100:.0f}% of reads come from the most abundant target...")
     
         base_table = self._prefixed(previous_table)
@@ -670,53 +657,10 @@ class MapRefiner:
     # -------------------------------
     # Pipelines
     # -------------------------------
-    @time_it
-    def load_csv(self, csv_path, table_name):
-        """
-        Load a CSV file as the 'initial' table in the database.
-    
-        Parameters
-        ----------
-        csv_path : str
-            Path to the CSV file.
-        """
-        table_name = self._prefixed(table_name)
-        print(f"Reading CSV from {csv_path} into {table_name}...")
-    
-        if not self.check_exists(table_name):
-            self.con.execute(f"""
-                CREATE OR REPLACE TABLE {table_name} AS
-                SELECT *
-                FROM read_csv_auto('{csv_path}')
-            """)
-        
-        
-    # def refine_map_from_parquet(self, parquet_path, save_name = None):
-    #     table_to_func = {
-    #         "initial": self.create_initial,
-    #         "quality_designed": self.create_quality_designed,
-    #         "barcode_exists": self.barcode_exists,    # new step
-    #         "grouped": self.create_grouped,
-    #         "thresholded": self.create_thresholded,
-    #         "unique_target": self.create_unique_target
-    #     }
-    #     prev_table = None
-    #     for table_name in self.map_order:
-    #         func = table_to_func.get(table_name)
-    #         if func is None:
-    #             continue
-    #         if table_name == "initial":
-    #             func(parquet_path)
-    #             prev_table = "initial"
-    #         else:
-    #             func(previous_table=prev_table)
-    #             prev_table = table_name
 
-    #     if save_name:
-    #         self.con.execute(f"CREATE OR REPLACE TABLE {save_name} AS SELECT * FROM {self._prefixed(prev_table)}")
-    #     print("Done.")
-
-    def refine_map_from_db(self, save_name = None):
+    def refine_map_from_db(self, save_name = None, should_check_exists = False):
+        self.should_check_exists = False
+        
         table_to_func = {
             "initial": None,
             "quality": self.create_quality,
@@ -874,80 +818,14 @@ class MapRefiner:
         else:
             df = self.save_loss_table()
 
-        #df = df[df["map"] != "initial"]
-    
-        # Initialize plot
-        if ax is None:
-            sns.set(style="white", context="talk")
-            fig, ax = plt.subplots(figsize=(6, 4), dpi=300)
-    
-        # Create color mapping
-        cmap = sns.color_palette(palette, n_colors=len(self.DEFAULT_MAP_ORDER))
-        palette_dict = {name: cmap[i] for i, name in enumerate(self.DEFAULT_MAP_ORDER)}
-        colors = [palette_dict.get(name, (0.5, 0.5, 0.5)) for name in df["map"]]
-    
-        # Bar plots for total reads (light) and unique counts (solid)
-        if show_background:
-            background_alpha = 0.5
-        else:
-            background_alpha = 0
-        sns.barplot(x="total_reads", y="description", data=df, ax=ax, palette=colors, alpha=background_alpha)
-        sns.barplot(x="unique_count", y="description", data=df, ax=ax, palette=colors, alpha = 1)
-        #sns.scatterplot(x="unique_AD_count", y="description", data=df, ax=ax, palette=colors, zorder = 20)
-
-        # Draw black line marking unique_AD_count — only show top edge
-        # sns.barplot(
-        #     x="unique_AD_count", y="description", data=df,
-        #     ax=ax, color='none', zorder=20
-        # )
-            
-        # Add count labels to bars
-        for i, row in df.iterrows():
-            # Unique counts (front bar)
-            if pd.notna(row["unique_count"]):
-                if row["unique_count"] != row["total_reads"]:
-                    ax.text(
-                        row["unique_count"] * 1.01,
-                        i-text_offset,
-                        f"{int(row['unique_count']):,}",
-                        va="center",
-                        ha="left",
-                        fontsize='small',
-                        color="black"#, zorder = 20
-                    )
-            if show_background:
-                background_color = 'black'
-            else:
-                background_color = 'white'
-            # Total reads (back bar)
-            if pd.notna(row["total_reads"]):
-                ax.text(
-                    row["total_reads"] * 1.01,
-                    i+text_offset,
-                    f"{int(row['total_reads']):,}",
-                    va="center",
-                    ha="left",
-                    fontsize='small',
-                    color=background_color#, zorder = 20
-                )
-
-        # if self.design_file:
-        #     design_file_df = pd.read_csv(self.design_file)
-        #     ax.axvline(len(design_file_df), color = 'gray', alpha = 0.5, zorder = 0, linestyle = 'dashed')
-        #     print(len(design_file_df))
-        
-        ax.set_xlabel("Read Count (Unique, Total)")
-        ax.set_ylabel("Map Step")
-        ax.set_yticklabels(df["map"])
-        sns.despine(bottom=True)
-        ax.set_xticks([])
-    
-        if self.output_figures_path:
-            grouped_table_name = self._prefixed('grouped')
-            filename = os.path.join(self.output_figures_path, f"{self.table_prefix_with_descriptor}loss.png")
-            plt.savefig(filename, bbox_inches="tight")
-
-        return ax
+        return plotting.plot_loss_helper(ax=None, 
+                                         palette="rocket_r", 
+                                         text_offset = 0, 
+                                         show_background = True,
+                                         default_map_order = self.DEFAULT_MAP_ORDER, 
+                                         output_figures_path = self.output_figures_path,
+                                         table_prefix_with_descriptor=self.table_prefix_with_descriptor, 
+                                         df=df)
         
     def plot_reads_histogram(self, previous_table, save_path=None, ax=None, **kwargs):
         map_df = self.get_map_df(previous_table)
@@ -971,54 +849,12 @@ class MapRefiner:
         Returns:
             pd.DataFrame: summary table of barcodes with counts and group sizes.
         """
-        import glob
-    
-        whitelist_dir = Path(self.output_figures_path or "./error_corrected")
-        whitelist_files = sorted(glob.glob(str(whitelist_dir / "*_whitelist.txt")))
-        print(whitelist_files)
-        
-        if not whitelist_files:
-            raise FileNotFoundError(f"No whitelist files found in {whitelist_dir}")
-    
-    
-        wl_df = pd.read_csv(whitelist_files[0], sep="\t", header=None,
-                            names=["canonical", "collapsed", "largest_count", "counts"])
+        return plotting.plot_error_correction(self.output_figures_path,
+                                              self.table_prefix_with_descriptor,
+                                              save_dir,
+                                              plot)
 
-        # Process collapsed sequences
-        wl_df["collapsed_list"] = wl_df["collapsed"].fillna("").apply(lambda x: x.split(",") if x else [])
-        wl_df["num_merged"] = wl_df["collapsed_list"].apply(len)
-
-        # Compute rest counts
-        def parse_counts(row):
-            if pd.isna(row["counts"]) or str(row["counts"]).strip() == "":
-                return row["largest_count"], 0
-            rest = sum(int(c) for c in str(row["counts"]).split(",") if c.strip())
-            largest = row["largest_count"] - rest
-            return largest, rest
-
-        wl_df[["largest_count", "rest_count"]] = wl_df.apply(parse_counts, axis=1, result_type="expand")
-
-        summary_df = wl_df
-    
-        # # Save summary
-        # if save_dir:
-        #     save_dir = Path(save_dir)
-        #     save_dir.mkdir(exist_ok=True)
-        #     csv_path = save_dir / f"{self.table_prefix_with_descriptor}whitelist_summary.csv"
-        #     summary_df.to_csv(csv_path, index=False)
-        #     print(f"Saved whitelist summary: {csv_path}")
-    
-        #Plot distributions
-        if plot:
-            sns.set(style="white", context="talk")
-
-            fig = self.plot_all_whitelists_from_summary(summary_df)
-            if self.output_figures_path:
-                plot_path = Path(self.output_figures_path) / f"{self.table_prefix_with_descriptor}whitelist_summary.png"
-                fig.savefig(plot_path, bbox_inches="tight")
-                print(f"Saved barcode whitelist plots: {plot_path}")
-            plt.show()
-    
+    @time_it
     def plot_all_whitelists_from_summary(self, summary_df, n_cols=4, dpi=300):
         """
         Plot summaries of multiple barcodes using precomputed summary_df
@@ -1039,69 +875,5 @@ class MapRefiner:
         fig : matplotlib.figure.Figure
             Figure containing all barcode summaries.
         """
-        n_barcodes = 1
-        n_rows = n_barcodes
-        n_panels = 4  # same as summarize_whitelist
-        
-        fig, axs = plt.subplots(n_rows, n_panels, figsize=(5 * n_panels, 5 * n_rows), dpi=dpi)
-    
-        # Ensure axs is 2D array for consistent indexing
-        if n_rows == 1:
-            axs = axs.reshape(1, -1)
-
-        i = 0
-        df_bc = summary_df#[summary_df["barcode"] == bc_name]
-        # df_bc = df_bc[["barcode", "num_merged", "rest_count", "largest_count"]]
-        # df_bc = df_bc.groupby("barcode").sum()
-        # df_bc.columns = ["barcode", "num_merged", "rest_count", "largest_count"]
-
-        # Panel 1: Bar chart of original vs canonical sequences
-        total_original_seqs = df_bc["num_merged"].sum() + len(df_bc)
-        total_canonical_seqs = len(df_bc)
-        axs[i, 0].bar(["Before", "After"], [total_original_seqs, total_canonical_seqs],
-                      color=[sns.color_palette('Paired')[0], sns.color_palette('Paired')[1]])
-        axs[i, 0].set_ylabel("Number of sequences")
-        for x, y in zip(["Before", "After"], [total_original_seqs, total_canonical_seqs]):
-            axs[i, 0].text(x, y + max([total_original_seqs, total_canonical_seqs])*0.02, f"{y:,}", 
-                           ha='center', va='bottom', fontsize='medium', weight='bold')
-
-        # Panel 2: Histogram of group sizes
-        axs[i, 1].hist(df_bc["num_merged"] + 1, bins=30, edgecolor='black')
-        axs[i, 1].set_xlabel("Group size")
-        axs[i, 1].set_ylabel("Frequency")
-
-        # Panel 3: Scatter - largest member vs group size
-        axs[i, 2].scatter(df_bc["largest_count"], df_bc["num_merged"] + 1, alpha=0.6)
-        axs[i, 2].set_xlabel("Reads of largest")
-        axs[i, 2].set_ylabel("Group size")
-
-        # Panel 4: Scatter - largest member vs sum of smaller members
-        axs[i, 3].scatter(df_bc["largest_count"], df_bc["rest_count"], alpha=0.6)
-        axs[i, 3].set_xlabel("Reads of largest")
-        axs[i, 3].set_ylabel("Summed merged reads")
-        axs[i, 3].set_xscale('log')
-        axs[i, 3].set_yscale('log')
-
-        # Plot y=x line for panel 4
-        xlims = axs[i, 3].get_xlim()
-        ylims = axs[i, 3].get_ylim()
-        line_min = min(xlims[0], ylims[0])
-        line_max = max(xlims[1], ylims[1])
-        axs[i, 3].plot([line_min, line_max], [line_min, line_max], 'r--', alpha=0.7)
-        axs[i, 3].set_xlim(xlims)
-
-        # Add row-level label for the barcode
-        fig.text(
-            -0.02,
-            (n_rows - i - 0.5) / n_rows,
-            f"Concat",
-            fontsize='large',
-            weight='bold',
-            rotation=90,
-            va='center'
-        )
-
-        sns.despine()
-        plt.tight_layout(pad=2)
-        return fig
+        return plotting.plot_all_whitelists_from_summary(summary_df, n_cols, dpi)
 

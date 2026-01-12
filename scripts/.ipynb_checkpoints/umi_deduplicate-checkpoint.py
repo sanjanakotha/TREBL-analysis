@@ -7,6 +7,7 @@ import preprocess
 import finder
 import tempfile
 import os
+import re
 import shutil
 import pathlib
 import dask.dataframe as dd
@@ -23,7 +24,7 @@ class UMIDeduplicator:
     """
 
     def __init__(self, db_path, bc_objects, step_name, descriptor, step1_map_name,
-                 fastq_path, umi_length, output_path):
+                 fastq_path, output_path, refined_map_suffix):
         self.db_path = db_path
         self.con = duckdb.connect(self.db_path)
         self.bc_objects = bc_objects
@@ -33,6 +34,8 @@ class UMIDeduplicator:
         self.descriptor = descriptor
         self.step1_map_name = step1_map_name
         self.output_path = output_path
+
+        self.refined_map_suffix = refined_map_suffix
 
         self.table_prefix = self.step_name + "_" + "_".join(self.cols) + "_"
         if descriptor:
@@ -46,7 +49,6 @@ class UMIDeduplicator:
                 base = base.replace(suffix, "")
             self.base = base
             self.fastq_path = fastq_path
-            self.umi_length = umi_length
  
     def counts_per_umi(self):
         """
@@ -57,7 +59,7 @@ class UMIDeduplicator:
 
         query = f"""
             SELECT {select_cols_sql}, UMI, COUNT(*) AS reads
-            FROM {self.table_prefix}error_corrected
+            FROM {self.table_prefix}{self.refined_map_suffix}
             GROUP BY {select_cols_sql}, UMI
             ORDER BY {select_cols_sql}, reads DESC
         """
@@ -74,7 +76,7 @@ class UMIDeduplicator:
         # Include individual columns in SELECT and GROUP BY
         select_cols_sql = ", ".join(self.cols)
 
-        self.new_table_name = f"{self.table_prefix}error_corrected_umis_collapsed"
+        self.new_table_name = f"{self.table_prefix}{self.refined_map_suffix}_umis_collapsed"
         
         #print(f"Counting unique UMIs per barcode(s) and saving as {self.new_table_name}...")
         
@@ -86,7 +88,7 @@ class UMIDeduplicator:
             CREATE OR REPLACE TABLE {self.new_table_name} AS
             SELECT {select_cols_sql}, 
                    COUNT(DISTINCT UMI) AS {self.alias_name}
-            FROM {self.table_prefix}error_corrected
+            FROM {self.table_prefix}{self.refined_map_suffix}
             GROUP BY {select_cols_sql}
             ORDER BY {self.alias_name} DESC
         """
@@ -175,7 +177,7 @@ class UMIDeduplicator:
     
         query = f"""
             SELECT UMI, {concat_expr} AS barcode_seq
-            FROM {self.table_prefix}error_corrected
+            FROM {self.table_prefix}{self.refined_map_suffix}
         """
         result = self.con.execute(query).fetchall()
         n_rows = len(result)
@@ -197,7 +199,7 @@ class UMIDeduplicator:
                 if umi is not None and seq is not None and len(seq) > 1 and len(umi) > 1:
                     header = f"@{umi}"
                     plus = "+"
-                    qual = "I" * len(seq)  # dummy error_corrected
+                    qual = "I" * len(seq)  
                     f.write(f"{header}\n{seq}\n{plus}\n{qual}\n")
         
         self.umi_fastq = output_file
@@ -221,7 +223,7 @@ class UMIDeduplicator:
         query = f"""
             CREATE OR REPLACE TABLE {new_table_name} AS
             SELECT DISTINCT {concat_expr} AS barcode
-            FROM {self.table_prefix}error_corrected
+            FROM {self.table_prefix}{self.refined_map_suffix}
         """
     
         print(f"Creating table of unique concatenated barcodes: {new_table_name}")
@@ -427,11 +429,14 @@ def run_fastp(input_dir, output_dir, script_path="../savio_jobs/fastp.sh"):
     
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
+    log_dir = os.path.join(output_dir, "logs")
+    os.makedirs(log_dir, exist_ok=True)
     
     # Submit the job with SLURM array option
     submit_cmd = [
         "sbatch",
         f"--array={array_range}",
+        f"--output={log_dir}/fastp_%A_%a.out",
         script_path,
         input_dir,
         output_dir
@@ -439,3 +444,59 @@ def run_fastp(input_dir, output_dir, script_path="../savio_jobs/fastp.sh"):
     
     subprocess.run(submit_cmd)
     print(f"Submitted SLURM array job for {len(files)} files using {script_path}.")
+
+
+def fastp_summary_df(output_dir):
+    log_dir = os.path.join(output_dir, "logs")
+    # List all .out files
+    log_files = [
+        f for f in os.listdir(log_dir)
+        if f.endswith(".out") and not f.lower().startswith("fastp")
+    ]
+    
+    # Prepare lists
+    samples = []
+    reads_passed = []
+    reads_filtered = []
+    
+    for f in tqdm(log_files):
+        path = os.path.join(log_dir, f)
+        with open(path) as fh:
+            text = fh.read()
+        
+        # Sample name (strip _fastp_report.out)
+        sample = f.replace("_fastp_report.out","")
+        
+        # Extract reads passed filter
+        match_passed = re.search(r"reads passed filter:\s+([\d,]+)", text)
+        match_failed_low = re.search(r"reads failed due to low quality:\s+([\d,]+)", text)
+        match_failed_N = re.search(r"reads failed due to too many N:\s+([\d,]+)", text)
+        match_failed_short = re.search(r"reads failed due to too short:\s+([\d,]+)", text)
+        
+        if match_passed:
+            passed = int(match_passed.group(1).replace(",",""))
+        else:
+            passed = 0
+        # Total filtered = sum of all failures
+        failed = 0
+        for m in [match_failed_low, match_failed_N, match_failed_short]:
+            if m:
+                failed += int(m.group(1).replace(",",""))
+        
+        samples.append(sample)
+        reads_passed.append(passed)
+        reads_filtered.append(failed)
+    
+    # Build dataframe
+    df = pd.DataFrame({
+        "sample": samples,
+        "reads_passed": reads_passed,
+        "reads_filtered": reads_filtered
+    })
+    
+    # Sort by total reads if you want
+    df["total_reads"] = df["reads_passed"] + df["reads_filtered"]
+    df = df.sort_values("total_reads", ascending=False)
+    df["filtered_percent"] = df["reads_filtered"] / (df["reads_passed"] + df["reads_filtered"]) * 100
+    df = df.reset_index(drop = True)
+    return df

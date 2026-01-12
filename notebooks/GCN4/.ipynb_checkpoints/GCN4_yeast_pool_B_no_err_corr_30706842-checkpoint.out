@@ -1,0 +1,14 @@
+Using database: /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/duckdb/GCN4_final.db
+Found 19 AD files
+Found 15 RPTR files
+Output path: /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4/yeast_pool_B
+Processing AD file: AD_2_180_S49
+Output prefix: /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4/yeast_pool_B/trebl_experiment_yeast_pool_B_AD_2_180_S49
+Traceback (most recent call last):
+  File "/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/notebooks/GCN4/yeast_pool_B_trebl_experiment.py", line 50, in <module>
+    bc_mapper = initial_map.InitialMapper(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/notebooks/GCN4/../../scripts/initial_map.py", line 38, in __init__
+    self.con = duckdb.connect(db_path)
+               ^^^^^^^^^^^^^^^^^^^^^^^
+duckdb.duckdb.IOException: IO Error: Could not set lock on file "/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/duckdb/GCN4_final.db": Conflicting lock is held in PID 0. See also https://duckdb.org/docs/stable/connect/concurrency

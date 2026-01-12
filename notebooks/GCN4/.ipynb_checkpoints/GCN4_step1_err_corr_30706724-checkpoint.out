@@ -1,0 +1,12 @@
+Libraries and custom modules imported successfully.
+Defining barcode configurations...
+Barcode definitions complete.
+Initializing map refiner...
+Traceback (most recent call last):
+  File "/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/notebooks/GCN4/error_corr.py", line 73, in <module>
+    refiner = map_refiner.MapRefiner(
+              ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/notebooks/GCN4/../../scripts/map_refiner.py", line 40, in __init__
+    self.con = duckdb.connect(self.db_path)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+duckdb.duckdb.IOException: IO Error: Could not set lock on file "/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/duckdb/GCN4_err_corr.db": Conflicting lock is held in PID 0. See also https://duckdb.org/docs/stable/connect/concurrency

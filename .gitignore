@@ -3,3 +3,4 @@ duckdb/
 from_EC/
 logs/
 output/
+notebooks/NKX2-2/error_corrected/step1_ADBC2_HawkBCs_RTBC_AD_filtered_barcodes_extracted.fastq
