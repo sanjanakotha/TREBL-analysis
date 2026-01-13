@@ -664,7 +664,7 @@ class MapRefiner:
     # -------------------------------
 
     def refine_map_from_db(self, save_name = None, should_check_exists = False):
-        self.should_check_exists = False
+        self.should_check_exists = should_check_exists
         
         table_to_func = {
             "initial": None,

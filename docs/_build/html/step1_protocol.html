@@ -237,24 +237,236 @@
         <article role="main" id="furo-main-content">
           <section id="step-1-protocol">
 <h1>Step 1 Protocol<a class="headerlink" href="#step-1-protocol" title="Link to this heading">¶</a></h1>
-<p>This document describes the first step protocol for the TREBL project.</p>
 <section id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
-<p>Provide a brief overview of the protocol here.</p>
+<p>This section describes how to use the TREBL analysis scripts to build and
+refine an initial Step 1 map.</p>
+<p>We will work through an example using the GCN4 Step 1 data. The data is
+available on Savio, and you can start a new notebook without any special
+conda environment. The initial map will likely take around 10 minutes
+to create.</p>
 </section>
 <section id="steps">
 <h2>Steps<a class="headerlink" href="#steps" title="Link to this heading">¶</a></h2>
+<section id="define-barcode-and-domain-structure">
+<h3>1. Define barcode and domain structure<a class="headerlink" href="#define-barcode-and-domain-structure" title="Link to this heading">¶</a></h3>
+<p>First, gather the preceding and post flanking sequences and the expected
+length for each domain and activation domain (AD).</p>
+<p>We will use <a class="reference internal" href="scripts.html#scripts.finder.Barcode" title="scripts.finder.Barcode"><code class="xref py py-class docutils literal notranslate"><span class="pre">Barcode</span></code></a> objects to organize barcode
+names, preceder sequences, post sequences, and lengths.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+    <span class="s2">&quot;/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/scripts&quot;</span>
+<span class="p">)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">finder</span>
+
+<span class="n">EC_AD</span> <span class="o">=</span> <span class="n">finder</span><span class="o">.</span><span class="n">Barcode</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;AD&quot;</span><span class="p">,</span>
+    <span class="n">preceder</span><span class="o">=</span><span class="s2">&quot;GGCTAGC&quot;</span><span class="p">,</span>
+    <span class="n">post</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">length</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">EC_AD_BC</span> <span class="o">=</span> <span class="n">finder</span><span class="o">.</span><span class="n">Barcode</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;AD_BC&quot;</span><span class="p">,</span>
+    <span class="n">preceder</span><span class="o">=</span><span class="s2">&quot;CGCGCC&quot;</span><span class="p">,</span>
+    <span class="n">post</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">length</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">EC_RPTR_BC</span> <span class="o">=</span> <span class="n">finder</span><span class="o">.</span><span class="n">Barcode</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;RPTR_BC&quot;</span><span class="p">,</span>
+    <span class="n">preceder</span><span class="o">=</span><span class="s2">&quot;CTCGAG&quot;</span><span class="p">,</span>
+    <span class="n">post</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">length</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">bc_objects</span> <span class="o">=</span> <span class="p">[</span><span class="n">EC_AD</span><span class="p">,</span> <span class="n">EC_AD_BC</span><span class="p">,</span> <span class="n">EC_RPTR_BC</span><span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="create-a-duckdb-database">
+<h3>2. Create a DuckDB database<a class="headerlink" href="#create-a-duckdb-database" title="Link to this heading">¶</a></h3>
+<p>TREBL uses DuckDB in the background, which requires a database file.
+Decide on a location where this file should be saved.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">db_path</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">&quot;/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/&quot;</span>
+    <span class="s2">&quot;TREBL/duckdb/GCN4_final.db&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="specify-sequencing-inputs-and-run-the-initial-mapper">
+<h3>3. Specify sequencing inputs and run the initial mapper<a class="headerlink" href="#specify-sequencing-inputs-and-run-the-initial-mapper" title="Link to this heading">¶</a></h3>
+<p>You will also need the following inputs:</p>
+<ul class="simple">
+<li><p>Sequencing data path(s) in <code class="docutils literal notranslate"><span class="pre">.fastq</span></code> or <code class="docutils literal notranslate"><span class="pre">.fastq.gz</span></code> format</p></li>
+<li><p>Design file path (if applicable)</p></li>
+<li><p>Whether to apply reverse complementation before searching with the
+provided flanking sequences</p></li>
+</ul>
+<p>Pass these inputs to <a class="reference internal" href="scripts.html#scripts.initial_map.InitialMapper" title="scripts.initial_map.InitialMapper"><code class="xref py py-class docutils literal notranslate"><span class="pre">InitialMapper</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">step1_mapper</span> <span class="o">=</span> <span class="n">initial_map</span><span class="o">.</span><span class="n">InitialMapper</span><span class="p">(</span>
+    <span class="n">db_path</span><span class="o">=</span><span class="n">db_path</span><span class="p">,</span>  <span class="c1"># Where to save database output</span>
+    <span class="n">step_name</span><span class="o">=</span><span class="s2">&quot;step1&quot;</span><span class="p">,</span>  <span class="c1"># Include time point / replicate</span>
+    <span class="n">seq_file</span><span class="o">=</span><span class="p">(</span>
+        <span class="s2">&quot;/global/scratch/projects/fc_mvslab/data/sequencing/&quot;</span>
+        <span class="s2">&quot;CZB_Feb2024/A10_A11/results/&quot;</span>
+        <span class="s2">&quot;A10_S1.fastq.gz.assembled.fastq&quot;</span>
+    <span class="p">),</span>
+    <span class="n">design_file_path</span><span class="o">=</span><span class="p">(</span>
+        <span class="s2">&quot;/global/scratch/projects/fc_mvslab/OpenProjects/EChase/&quot;</span>
+        <span class="s2">&quot;TREBLEseq_ismaybethenewcibername/&quot;</span>
+        <span class="s2">&quot;A10_sequencing/v2/current/a10_designfile.csv&quot;</span>
+    <span class="p">),</span>
+    <span class="n">bc_objects</span><span class="o">=</span><span class="n">bc_objects</span><span class="p">,</span>
+    <span class="n">reverse_complement</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="refine-map">
+<h3>4. Refine map<a class="headerlink" href="#refine-map" title="Link to this heading">¶</a></h3>
+<p>After generating the initial Step 1 map, the next step is to refine it.
+We want to refine the map to only keep high-quality, high-confidence reads and to
+remove barcode collisions.</p>
+<p>The refinement process consists of several optional steps which can be performed
+in a flexible order. Each step is described below, with corresponding example
+arguments which will be passed to <a class="reference internal" href="scripts.html#scripts.map_refiner.MapRefiner" title="scripts.map_refiner.MapRefiner"><code class="xref py py-class docutils literal notranslate"><span class="pre">MapRefiner</span></code></a>.</p>
+</section>
+<section id="refinement-steps">
+<h3>Refinement steps<a class="headerlink" href="#refinement-steps" title="Link to this heading">¶</a></h3>
+</section>
+<section id="grouped">
+<h3>Grouped<a class="headerlink" href="#grouped" title="Link to this heading">¶</a></h3>
+<p>Groups reads and collapses duplicate reads to get counts per unique read.
+This is usually the first step in refinement.</p>
+</section>
+<section id="thresholded">
+<h3>Thresholded<a class="headerlink" href="#thresholded" title="Link to this heading">¶</a></h3>
+<p>Keeps reads above a certain abundance threshold. Must be run <strong>after grouped</strong>.</p>
+<ul>
+<li><p>If you know your read count threshold, set it directly:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">reads_threshold</span> <span class="o">=</span> <span class="mi">0</span>
+</pre></div>
+</div>
+</li>
+<li><p>If not, pass <code class="docutils literal notranslate"><span class="pre">None</span></code>. You will be prompted to inspect the read histogram:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">reads_threshold</span> <span class="o">=</span> <span class="kc">None</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</section>
+<section id="barcode-exists">
+<h3>Barcode exists<a class="headerlink" href="#barcode-exists" title="Link to this heading">¶</a></h3>
+<p>Remove rows with at least 1 empty barcode.</p>
+</section>
+<section id="quality">
+<h3>Quality<a class="headerlink" href="#quality" title="Link to this heading">¶</a></h3>
+<p>Filter reads based on sequence quality, meaning that domain and AD lengths must match expected length.</p>
+</section>
+<section id="unique-target">
+<h3>Unique target<a class="headerlink" href="#unique-target" title="Link to this heading">¶</a></h3>
+<ul>
+<li><p>Which columns should be used for key–target matching? For example, if you want to check that one RPTR BC matches just one AD, you should pass the following argument:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">column_pairs</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;RPTR_BC&quot;</span><span class="p">,</span> <span class="s2">&quot;AD&quot;</span><span class="p">)]</span>
+</pre></div>
+</div>
+</li>
+<li><p>But if you want to check that one RPTR BC matches a concatenated AD + AD BC, you should pass the following argument:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">column_pairs</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;RPTR_BC&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;AD&quot;</span><span class="p">,</span> <span class="s2">&quot;AD_BC&quot;</span><span class="p">))]</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>You can use any number of keys and/or targets, you just need to pass them in as a tuple.</p>
+<ul>
+<li><p>Do you want to allow flexibility in key/target matching? - For example, if the key is the RPTR barcode and the target is the AD, can a RPTR barcode map to multiple ADs as long as the most abundant AD makes up more than 90% of reads?</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">min_fraction_major_target</span> <span class="o">=</span> <span class="mf">0.9</span>  <span class="c1"># RPTR can map to multiple ADs if &gt;90% major</span>
+</pre></div>
+</div>
+</li>
+<li><p>Or should 1 RPTR barcode only map to 1 AD?</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">min_fraction_major_target</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</section>
+<section id="designed">
+<h3>Designed<a class="headerlink" href="#designed" title="Link to this heading">¶</a></h3>
+<p>Filters reads to keep only ADs that appear in the design file.</p>
+</section>
+<section id="recommended-order">
+<h3>Recommended order<a class="headerlink" href="#recommended-order" title="Link to this heading">¶</a></h3>
+<p>For consistency, we recommend applying steps in the following order:</p>
 <ol class="arabic simple">
-<li><p>Step one: Describe the first step.</p></li>
-<li><p>Step two: Describe the second step.</p></li>
-<li><p>Continue with your protocol steps as needed.</p></li>
+<li><p>grouped</p></li>
+<li><p>thresholded</p></li>
+<li><p>barcode_exists</p></li>
+<li><p>quality</p></li>
+<li><p>unique_target</p></li>
+<li><p>designed</p></li>
 </ol>
+<p>Thresholded <strong>must come after grouped</strong>, while the other steps can be applied
+flexibly.</p>
+<p>We will pass the order explicitly:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">map_order</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;grouped&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;thresholded&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;barcode_exists&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;quality&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;unique_target&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;designed&quot;</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="refine-the-map">
+<h3>5. Refine the map<a class="headerlink" href="#refine-the-map" title="Link to this heading">¶</a></h3>
+<p>Finally, pass in desired arguments as above to <a class="reference internal" href="scripts.html#scripts.map_refiner.MapRefiner" title="scripts.map_refiner.MapRefiner"><code class="xref py py-class docutils literal notranslate"><span class="pre">MapRefiner</span></code></a> constructor.</p>
+<p>Example: Apply all filters to keep sequences that:</p>
+<ul class="simple">
+<li><p>Have at least 50 reads</p></li>
+<li><p>Contain barcodes and ADs of correct length</p></li>
+<li><p>Map &gt;90% of RPTR BC reads to the same AD</p></li>
+<li><p>Appear in the design file</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">refiner</span> <span class="o">=</span> <span class="n">map_refiner</span><span class="o">.</span><span class="n">MapRefiner</span><span class="p">(</span>
+    <span class="n">db_path</span><span class="o">=</span><span class="n">db_path</span><span class="p">,</span>             <span class="c1"># Same as before</span>
+    <span class="n">bc_objects</span><span class="o">=</span><span class="n">bc_objects</span><span class="p">,</span>       <span class="c1"># Same as before</span>
+    <span class="n">column_pairs</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;RPTR_BC&quot;</span><span class="p">,</span> <span class="s2">&quot;AD&quot;</span><span class="p">)],</span>
+    <span class="n">reads_threshold</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+    <span class="n">map_order</span><span class="o">=</span><span class="p">[</span>
+        <span class="s2">&quot;grouped&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;thresholded&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;quality&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;unique_target&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;designed&quot;</span><span class="p">,</span>
+    <span class="p">],</span>
+    <span class="n">step_name</span><span class="o">=</span><span class="s2">&quot;step1&quot;</span><span class="p">,</span>
+    <span class="n">output_figures_path</span><span class="o">=</span><span class="s2">&quot;../../output/GCN4/figures/&quot;</span><span class="p">,</span>  <span class="c1"># Optional</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>To run the refining:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">refiner</span><span class="o">.</span><span class="n">refine_map_from_db</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="visualizing-loss">
+<h2>Visualizing loss<a class="headerlink" href="#visualizing-loss" title="Link to this heading">¶</a></h2>
+<p>Run this cell to create a bar graph showing total and unique reads at each refining step.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">refiner</span><span class="o">.</span><span class="n">plot_loss</span><span class="p">()</span>
+</pre></div>
+</div>
 </section>
 <section id="notes">
 <h2>Notes<a class="headerlink" href="#notes" title="Link to this heading">¶</a></h2>
 <ul class="simple">
-<li><p>Any important notes or warnings.</p></li>
-<li><p>Reference other sections or modules if necessary.</p></li>
+<li><p>In progress: Documentation for step 1 using UMI Tools to error correct reads.</p></li>
 </ul>
 </section>
 </section>
@@ -316,7 +528,23 @@
             <ul>
 <li><a class="reference internal" href="#">Step 1 Protocol</a><ul>
 <li><a class="reference internal" href="#overview">Overview</a></li>
-<li><a class="reference internal" href="#steps">Steps</a></li>
+<li><a class="reference internal" href="#steps">Steps</a><ul>
+<li><a class="reference internal" href="#define-barcode-and-domain-structure">1. Define barcode and domain structure</a></li>
+<li><a class="reference internal" href="#create-a-duckdb-database">2. Create a DuckDB database</a></li>
+<li><a class="reference internal" href="#specify-sequencing-inputs-and-run-the-initial-mapper">3. Specify sequencing inputs and run the initial mapper</a></li>
+<li><a class="reference internal" href="#refine-map">4. Refine map</a></li>
+<li><a class="reference internal" href="#refinement-steps">Refinement steps</a></li>
+<li><a class="reference internal" href="#grouped">Grouped</a></li>
+<li><a class="reference internal" href="#thresholded">Thresholded</a></li>
+<li><a class="reference internal" href="#barcode-exists">Barcode exists</a></li>
+<li><a class="reference internal" href="#quality">Quality</a></li>
+<li><a class="reference internal" href="#unique-target">Unique target</a></li>
+<li><a class="reference internal" href="#designed">Designed</a></li>
+<li><a class="reference internal" href="#recommended-order">Recommended order</a></li>
+<li><a class="reference internal" href="#refine-the-map">5. Refine the map</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#visualizing-loss">Visualizing loss</a></li>
 <li><a class="reference internal" href="#notes">Notes</a></li>
 </ul>
 </li>
