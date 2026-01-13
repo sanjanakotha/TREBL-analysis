@@ -3,6 +3,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from scripts.preprocess import time_it
 from pathlib import Path
 import pandas as pd
+import matplotlib
+import os
+
+matplotlib.use("Agg")  # non-GUI backend for headless plotting
+
 import matplotlib.pyplot as plt
 from pathlib import Path
 import seaborn as sns

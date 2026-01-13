@@ -1,7 +1,11 @@
+import matplotlib
+import os
+
+matplotlib.use("Agg")  # non-GUI backend for headless plotting
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
-import os
 import pandas as pd
 
 def plot_reads_histogram(map_df, save_path=None, ax=None, **kwargs):    

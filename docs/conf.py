@@ -48,8 +48,19 @@ exclude_patterns = [
     '**/.ipynb_checkpoints/**',
     '**/old_scripts/**'
 ]
-autodoc_mock_imports = ["mapping"]
-
+autodoc_mock_imports = [
+    "mapping",
+    "numpy",
+    "pandas",
+    "dask",
+    "duckdb",
+    "Bio",
+    "matplotlib",
+    "matplotlib.pyplot",
+    "seaborn",
+    "pyarrow",
+    "tqdm"
+]
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for

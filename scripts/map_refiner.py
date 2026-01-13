@@ -1,6 +1,11 @@
 import duckdb
 import pandas as pd
+import matplotlib
+import os
+matplotlib.use("Agg")  # non-GUI backend for headless plotting
+
 import matplotlib.pyplot as plt
+
 import seaborn as sns
 sns.set(style="white", context="talk")
 from tqdm import tqdm
@@ -8,7 +13,6 @@ import warnings
 warnings.filterwarnings("ignore")
 import matplotlib.cm as cm
 from pathlib import Path
-import os
 
 from scripts import plotting
 from scripts.preprocess import time_it
