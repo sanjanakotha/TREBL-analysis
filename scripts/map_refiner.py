@@ -2,8 +2,6 @@ import duckdb
 import pandas as pd
 import matplotlib
 import os
-matplotlib.use("Agg")  # non-GUI backend for headless plotting
-
 import matplotlib.pyplot as plt
 
 import seaborn as sns
@@ -817,16 +815,16 @@ class MapRefiner:
         # Name of saved summary table
         loss_table_name = self._prefixed("loss_summary")
     
-        # Use check_exists() and get_map_df() to get the DataFrame
-        if self.check_exists(loss_table_name):
-            df = self.get_map_df("loss_summary")
-        else:
-            df = self.save_loss_table()
+        # # Use check_exists() and get_map_df() to get the DataFrame
+        # if self.check_exists(loss_table_name):
+        #     df = self.get_map_df("loss_summary")
+        # else:
+        df = self.save_loss_table()
 
-        return plotting.plot_loss_helper(ax=None, 
-                                         palette="rocket_r", 
-                                         text_offset = 0, 
-                                         show_background = True,
+        return plotting.plot_loss_helper(ax=ax, 
+                                         palette=palette, 
+                                         text_offset = text_offset, 
+                                         show_background = show_background,
                                          default_map_order = self.DEFAULT_MAP_ORDER, 
                                          output_figures_path = self.output_figures_path,
                                          table_prefix_with_descriptor=self.table_prefix_with_descriptor, 

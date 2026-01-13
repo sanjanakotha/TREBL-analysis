@@ -84,7 +84,7 @@ Pass these inputs to :class:`~scripts.initial_map.InitialMapper`.
 
    step1_mapper = initial_map.InitialMapper(
        db_path=db_path,  # Where to save database output
-       step_name="step1",  # Include time point / replicate
+       step_name="step1",  
        seq_file=(
            "/global/scratch/projects/fc_mvslab/data/sequencing/"
            "CZB_Feb2024/A10_A11/results/"
@@ -130,7 +130,7 @@ Keeps reads above a certain abundance threshold. Must be run **after grouped**.
 
      reads_threshold = 0
 
-- If not, pass ``None``. You will be prompted to inspect the read histogram:
+- If not, pass ``None``. You will be prompted to inspect the reads histogram before setting a threshold.
 
   .. code-block:: python
 
@@ -148,6 +148,8 @@ Filter reads based on sequence quality, meaning that domain and AD lengths must 
 
 Unique target
 ~~~~~~~~~~~~~
+
+Here, I refer to keys as objects used to map back to targets. So, in the context of ADs and barcodes, barcodes would be the keys which map back to ADs, the targets.
 
 - Which columns should be used for key–target matching? For example, if you want to check that one RPTR BC matches just one AD, you should pass the following argument:
 

@@ -1,8 +1,5 @@
 import matplotlib
 import os
-
-matplotlib.use("Agg")  # non-GUI backend for headless plotting
-
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
@@ -250,5 +247,5 @@ def plot_loss_helper(ax, palette, text_offset, show_background, default_map_orde
         filename = os.path.join(output_figures_path, f"{table_prefix_with_descriptor}loss.png")
         plt.savefig(filename, bbox_inches="tight")
 
-    return ax
+    return fig, ax
     

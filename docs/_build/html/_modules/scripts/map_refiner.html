@@ -233,8 +233,6 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-<span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">&quot;Agg&quot;</span><span class="p">)</span>  <span class="c1"># non-GUI backend for headless plotting</span>
-
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">seaborn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sns</span>
@@ -1103,16 +1101,16 @@
         <span class="c1"># Name of saved summary table</span>
         <span class="n">loss_table_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="s2">&quot;loss_summary&quot;</span><span class="p">)</span>
     
-        <span class="c1"># Use check_exists() and get_map_df() to get the DataFrame</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_exists</span><span class="p">(</span><span class="n">loss_table_name</span><span class="p">):</span>
-            <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_map_df</span><span class="p">(</span><span class="s2">&quot;loss_summary&quot;</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_loss_table</span><span class="p">()</span>
+        <span class="c1"># # Use check_exists() and get_map_df() to get the DataFrame</span>
+        <span class="c1"># if self.check_exists(loss_table_name):</span>
+        <span class="c1">#     df = self.get_map_df(&quot;loss_summary&quot;)</span>
+        <span class="c1"># else:</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_loss_table</span><span class="p">()</span>
 
-        <span class="k">return</span> <span class="n">plotting</span><span class="o">.</span><span class="n">plot_loss_helper</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
-                                         <span class="n">palette</span><span class="o">=</span><span class="s2">&quot;rocket_r&quot;</span><span class="p">,</span> 
-                                         <span class="n">text_offset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> 
-                                         <span class="n">show_background</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="k">return</span> <span class="n">plotting</span><span class="o">.</span><span class="n">plot_loss_helper</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> 
+                                         <span class="n">palette</span><span class="o">=</span><span class="n">palette</span><span class="p">,</span> 
+                                         <span class="n">text_offset</span> <span class="o">=</span> <span class="n">text_offset</span><span class="p">,</span> 
+                                         <span class="n">show_background</span> <span class="o">=</span> <span class="n">show_background</span><span class="p">,</span>
                                          <span class="n">default_map_order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DEFAULT_MAP_ORDER</span><span class="p">,</span> 
                                          <span class="n">output_figures_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_figures_path</span><span class="p">,</span>
                                          <span class="n">table_prefix_with_descriptor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">table_prefix_with_descriptor</span><span class="p">,</span> 

@@ -9,14 +9,8 @@ import glob
 from tqdm import tqdm
 import os
 
-sys.path.insert(0, "/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/scripts")
-import initial_map
-import map_refiner
-import complexity
-import finder
-import preprocess
-import plotting
-import umi_deduplicate
+sys.path.append("/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/")
+from scripts import initial_map, map_refiner, complexity, finder, preprocess, error_correct, plotting, umi_deduplicate
 
 print("Done with imports")
 
@@ -55,7 +49,8 @@ for file_path in yeast_pool_C_umi_RT_seq_files:
                                        seq_file = file_path,
                                        bc_objects = [EC_RPTR_BC],
                                         umi_object=RT_UMI,
-                                       reverse_complement = True)
+                                       reverse_complement = True,
+                                          design_file_path = None)
     umi_mapper.create_map()
 
     # Only keep barcodes of correct length
@@ -65,10 +60,7 @@ for file_path in yeast_pool_C_umi_RT_seq_files:
                                         map_order = ['quality'],
                                         step_name=f"trebl_experiment_yeast_pool_C_umi_{name_only}", 
                                         descriptor = "",
-                                        should_check_exists = False,
-                                        design_check = False,
                                         output_figures_path='/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4/yeast_pool_C_umi/figures',
-                                        plot_histograms=True,
                                         reads_threshold = 0,
                                         umi_object = RT_UMI)
     refiner.refine_map_from_db()
@@ -84,6 +76,8 @@ for file_path in yeast_pool_C_umi_RT_seq_files:
                                                         output_path = umi_path, 
                                                        refined_map_suffix = 'quality')
 
-    deduplicator.run_both_deduplications()
+    #deduplicator.run_both_deduplications()
+    deduplicator.run_simple_deduplication()
+    deduplicator.save_simple_deduplication()
 
-   
+

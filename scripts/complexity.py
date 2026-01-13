@@ -4,8 +4,6 @@ import numpy as np           # For numerical operations (e.g., np.round, np.isfi
 import seaborn as sns        # For plotting (barplot, styling)
 import matplotlib
 import os
-matplotlib.use("Agg")  # non-GUI backend for headless plotting
-
 import matplotlib.pyplot as plt
 import tempfile
 import os

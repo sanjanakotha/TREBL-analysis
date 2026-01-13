@@ -308,7 +308,7 @@ provided flanking sequences</p></li>
 <p>Pass these inputs to <a class="reference internal" href="scripts.html#scripts.initial_map.InitialMapper" title="scripts.initial_map.InitialMapper"><code class="xref py py-class docutils literal notranslate"><span class="pre">InitialMapper</span></code></a>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">step1_mapper</span> <span class="o">=</span> <span class="n">initial_map</span><span class="o">.</span><span class="n">InitialMapper</span><span class="p">(</span>
     <span class="n">db_path</span><span class="o">=</span><span class="n">db_path</span><span class="p">,</span>  <span class="c1"># Where to save database output</span>
-    <span class="n">step_name</span><span class="o">=</span><span class="s2">&quot;step1&quot;</span><span class="p">,</span>  <span class="c1"># Include time point / replicate</span>
+    <span class="n">step_name</span><span class="o">=</span><span class="s2">&quot;step1&quot;</span><span class="p">,</span>
     <span class="n">seq_file</span><span class="o">=</span><span class="p">(</span>
         <span class="s2">&quot;/global/scratch/projects/fc_mvslab/data/sequencing/&quot;</span>
         <span class="s2">&quot;CZB_Feb2024/A10_A11/results/&quot;</span>
@@ -351,7 +351,7 @@ This is usually the first step in refinement.</p>
 </pre></div>
 </div>
 </li>
-<li><p>If not, pass <code class="docutils literal notranslate"><span class="pre">None</span></code>. You will be prompted to inspect the read histogram:</p>
+<li><p>If not, pass <code class="docutils literal notranslate"><span class="pre">None</span></code>. You will be prompted to inspect the reads histogram before setting a threshold.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">reads_threshold</span> <span class="o">=</span> <span class="kc">None</span>
 </pre></div>
 </div>
@@ -368,6 +368,7 @@ This is usually the first step in refinement.</p>
 </section>
 <section id="unique-target">
 <h3>Unique target<a class="headerlink" href="#unique-target" title="Link to this heading">¶</a></h3>
+<p>Here, I refer to keys as objects used to map back to targets. So, in the context of ADs and barcodes, barcodes would be the keys which map back to ADs, the targets.</p>
 <ul>
 <li><p>Which columns should be used for key–target matching? For example, if you want to check that one RPTR BC matches just one AD, you should pass the following argument:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">column_pairs</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;RPTR_BC&quot;</span><span class="p">,</span> <span class="s2">&quot;AD&quot;</span><span class="p">)]</span>

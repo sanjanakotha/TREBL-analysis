@@ -7,7 +7,7 @@ Workflow Overview
 -----------------
 Follow these steps to run a TREBL analysis:
 
-1. :doc:`step1_protocol` - generate and refine a Step 1 map (if exists)
+1. :doc:`step1_protocol` - generate and refine a Step 1 map
 2. Step 2 (coming soon)
 3. TREBL experiment (coming soon)
 
