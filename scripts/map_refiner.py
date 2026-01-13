@@ -8,8 +8,9 @@ import warnings
 warnings.filterwarnings("ignore")
 import matplotlib.cm as cm
 from pathlib import Path
-from scripts import plotting
 import os
+
+from scripts import plotting
 from scripts.preprocess import time_it
 from scripts.error_correct import run_whitelist_on_concat_domains
 from scripts import error_correct
@@ -185,7 +186,7 @@ class MapRefiner:
     @time_it
     def create_quality(self, previous_table="initial"):
         """
-        Keep only rows where all *_qual columns are TRUE.
+        Keep only rows where all _qual columns are TRUE.
         """
         print("\nFiltering to high-quality reads...")
     

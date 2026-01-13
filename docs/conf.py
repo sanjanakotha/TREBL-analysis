@@ -13,10 +13,10 @@
 import os
 import sys
 
-ROOT = os.path.abspath('..')
-sys.path.insert(0, ROOT)
-sys.path.insert(0, os.path.join(ROOT, 'scripts'))
-
+TREBL_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if TREBL_ROOT not in sys.path:
+    sys.path.insert(0, TREBL_ROOT)
+    
 # -- Project information -----------------------------------------------------
 
 project = 'TREBL'
@@ -43,8 +43,11 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '**/.ipynb_checkpoints']
-
+exclude_patterns = [
+    '_build', 'Thumbs.db', '.DS_Store', 
+    '**/.ipynb_checkpoints/**',
+    '**/old_scripts/**'
+]
 autodoc_mock_imports = ["mapping"]
 
 # -- Options for HTML output -------------------------------------------------
