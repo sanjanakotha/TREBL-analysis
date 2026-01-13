@@ -5,3 +5,7 @@ biopython
 sphinx
 furo
 pyarrow
+matplotlib
+seaborn
+tqdm
+numpy
