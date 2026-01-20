@@ -495,18 +495,14 @@ an initial mapping table in DuckDB.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="scripts.initial_map.InitialMapper.create_map">
 <span class="sig-name descname"><span class="pre">create_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/initial_map.html#InitialMapper.create_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.initial_map.InitialMapper.create_map" title="Link to this definition">¶</a></dt>
-<dd><p>Run the full mapping pipeline on all reads.</p>
+<dd><p>Run the full mapping pipeline on all reads (skip if already exists).</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="scripts.initial_map.InitialMapper.create_test_map">
 <span class="sig-name descname"><span class="pre">create_test_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">test_n_reads</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/initial_map.html#InitialMapper.create_test_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.initial_map.InitialMapper.create_test_map" title="Link to this definition">¶</a></dt>
-<dd><p>Run the mapping pipeline on a limited number of reads for testing.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>test_n_reads</strong> (<em>int</em>) – Number of reads to process for testing. Defaults to 100.</p>
-</dd>
-</dl>
+<dd><p>Run the mapping pipeline on a limited number of reads for testing.
+Skips if initial map already exists.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -776,6 +772,344 @@ and percentage losses at each mapping step.</p>
 <dt class="sig sig-object py" id="scripts.map_refiner.MapRefiner.show_tables">
 <span class="sig-name descname"><span class="pre">show_tables</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/map_refiner.html#MapRefiner.show_tables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.map_refiner.MapRefiner.show_tables" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-scripts.pipelines">
+<span id="scripts-pipelines-module"></span><h2>scripts.pipelines module<a class="headerlink" href="#module-scripts.pipelines" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="scripts.pipelines.TreblPipeline">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">scripts.pipelines.</span></span><span class="sig-name descname"><span class="pre">TreblPipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">db_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">design_file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error_correction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_n_reads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/pipelines.html#TreblPipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.pipelines.TreblPipeline" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>End-to-end TREBL analysis steps.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="scripts.pipelines.TreblPipeline.db_path">
+<span class="sig-name descname"><span class="pre">db_path</span></span><a class="headerlink" href="#scripts.pipelines.TreblPipeline.db_path" title="Link to this definition">¶</a></dt>
+<dd><p>Path to the DuckDB database used for all steps.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="scripts.pipelines.TreblPipeline.error_correction">
+<span class="sig-name descname"><span class="pre">error_correction</span></span><a class="headerlink" href="#scripts.pipelines.TreblPipeline.error_correction" title="Link to this definition">¶</a></dt>
+<dd><p>Whether to apply error-correction
+operations during refinement.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="scripts.pipelines.TreblPipeline.output_figures_path">
+<span class="sig-name descname"><span class="pre">output_figures_path</span></span><a class="headerlink" href="#scripts.pipelines.TreblPipeline.output_figures_path" title="Link to this definition">¶</a></dt>
+<dd><p>Directory to write figures.
+If None, figures are not generated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scripts.pipelines.TreblPipeline.plot_trebl_experiment_loss">
+<span class="sig-name descname"><span class="pre">plot_trebl_experiment_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bc_objects</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step1_map_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_name_prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'trebl_experiment_'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/pipelines.html#TreblPipeline.plot_trebl_experiment_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.pipelines.TreblPipeline.plot_trebl_experiment_loss" title="Link to this definition">¶</a></dt>
+<dd><p>Plot barcode quality and mapping loss for a TREBL experiment.</p>
+<dl class="simple">
+<dt>Generates bar plots showing:</dt><dd><ol class="arabic simple">
+<li><p>Total number of reads in each initial mapping table.</p></li>
+<li><p>Number of reads passing barcode quality checks (<cite>_qual</cite> columns).</p></li>
+<li><p>Number of reads that match the Step 1 map for all barcodes.</p></li>
+</ol>
+</dd>
+</dl>
+<p>Plots are saved as a PNG file in <cite>self.output_figures_path</cite> and
+returned as Matplotlib figure and axes objects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bc_objects</strong> (<em>list</em>) – List of barcode objects to evaluate.</p></li>
+<li><p><strong>step1_map_name</strong> (<em>str</em>) – Name of the Step 1 DuckDB table used to
+calculate overlap with mapped barcodes.</p></li>
+<li><p><strong>step_name_prefix</strong> (<em>str</em><em>, </em><em>optional</em>) – Prefix used to identify TREBL
+experiment tables in DuckDB. Defaults to “<a href="#id1"><span class="problematic" id="id2">trebl_experiment_</span></a>”.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>(fig, axes)</dt><dd><ul class="simple">
+<li><p>fig (matplotlib.figure.Figure): Figure object containing all subplots.</p></li>
+<li><p>axes (list[matplotlib.axes._subplots.AxesSubplot]): Flattened list of subplot axes.
+Returns None, None if no matching tables are found.</p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scripts.pipelines.TreblPipeline.reads_distribution">
+<span class="sig-name descname"><span class="pre">reads_distribution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bc_objects</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reverse_complement</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/pipelines.html#TreblPipeline.reads_distribution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.pipelines.TreblPipeline.reads_distribution" title="Link to this definition">¶</a></dt>
+<dd><p>Visualize read-count distributions for a single FASTQ file to help decide a threshold.</p>
+<p>This performs initial mapping and grouping and plots a reads histogram.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>seq_file</strong> (<em>str</em>) – FASTQ file path.</p></li>
+<li><p><strong>bc_objects</strong> (<em>list</em>) – Barcode objects.</p></li>
+<li><p><strong>step_name</strong> (<em>str</em>) – Step name used for DuckDB tables.</p></li>
+<li><p><strong>reverse_complement</strong> (<em>bool</em>) – Whether to reverse complement reads.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scripts.pipelines.TreblPipeline.run_step_1">
+<span class="sig-name descname"><span class="pre">run_step_1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bc_objects</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_pairs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reads_threshold</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reverse_complement</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/pipelines.html#TreblPipeline.run_step_1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.pipelines.TreblPipeline.run_step_1" title="Link to this definition">¶</a></dt>
+<dd><p>Run TREBL Step 1: map reads to designed AD barcodes.</p>
+<p>Performs initial mapping, refinement, optional error correction,
+and outputs the final designed map.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>seq_file</strong> (<em>str</em>) – FASTQ file containing Step 1 reads.</p></li>
+<li><p><strong>bc_objects</strong> (<em>list</em>) – Barcode objects defining extraction rules.</p></li>
+<li><p><strong>column_pairs</strong> (<em>list</em><em>[</em><em>tuple</em><em>]</em>) – <p>Column-pair checks used
+to remove barcode collisions.</p>
+<p>Each tuple has the form:</p>
+<blockquote>
+<div><p>(key_column(s), target_column(s))</p>
+</div></blockquote>
+<p>where <cite>key_column(s)</cite> and <cite>target_column(s)</cite> can be either
+a single column name (str) or a tuple/list of column names.</p>
+<p>The constraint enforces that, for each <strong>key</strong>, at least
+90% of its reads must map to a single <strong>target</strong>. If a key
+value maps to multiple targets without one reaching the 90%
+threshold, the key is considered ambiguous and discarded.</p>
+<p><strong>Single-column example</strong>:</p>
+<blockquote>
+<div><p>column_pairs = [(“RPTR_BC”, “AD”)]</p>
+</div></blockquote>
+<p>This ensures that each reporter barcode (<code class="docutils literal notranslate"><span class="pre">RPTR_BC</span></code>) maps
+predominantly to a single AD. If a reporter barcode has
+reads mapping to multiple ADs without one exceeding 90%,
+that reporter barcode is removed.</p>
+<p><strong>Multi-column example</strong>:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>column_pairs = [</dt><dd><p>((“RPTR_BC”), (“Hawk_BC”, “AD_BC”))</p>
+</dd>
+</dl>
+<p>]</p>
+</div></blockquote>
+<p>This checks that each RPTR BC
+maps to a single Hawkins AD barcode and AD barcode combination
+with ≥90% of reads. Ambiguous key combinations are removed.</p>
+<p>Multiple constraints may be applied sequentially:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>column_pairs = [</dt><dd><p>(“AD_BC”, “AD”),
+(“RPTR_BC”, “AD”),
+((“AD_BC”, “RPTR_BC”), (“AD”, “SampleID”)),</p>
+</dd>
+</dl>
+<p>]</p>
+</div></blockquote>
+</p></li>
+<li><p><strong>reads_threshold</strong> (<em>int</em>) – Minimum number of reads required for a
+barcode or barcode pair to be kept.</p></li>
+<li><p><strong>reverse_complement</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether reads should be
+reverse complemented prior to barcode extraction.
+Defaults to False.</p></li>
+<li><p><strong>step_suffix</strong> (<em>str</em><em>, </em><em>optional</em>) – <p>Suffix appended to the step name
+for DuckDB table naming. This is useful when you want
+to distinguish multiple runs or subsets of the same step.</p>
+<p class="rubric">Example</p>
+<p>”_spike_in” — if processing spike-in samples separately
+from your main dataset.
+“_new_data” — for data from new sequencing run.</p>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Final designed Step 1 mapping after all refinement
+steps have been applied.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scripts.pipelines.TreblPipeline.run_step_2">
+<span class="sig-name descname"><span class="pre">run_step_2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">AD_seq_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">AD_bc_objects</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">RT_seq_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">RT_bc_objects</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reverse_complement</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reads_threshold_AD</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reads_threshold_RT</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step1_map_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/pipelines.html#TreblPipeline.run_step_2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.pipelines.TreblPipeline.run_step_2" title="Link to this definition">¶</a></dt>
+<dd><p>Run TREBL Step 2: Analyze intermediate complexity.</p>
+<p>Performs separate refinement for AD and RT libraries and computes
+overlap with the Step 1 map.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>AD_seq_file</strong> (<em>str</em>) – FASTQ file containing AD reads.</p></li>
+<li><p><strong>AD_bc_objects</strong> (<em>list</em>) – Barcode objects for ADs.</p></li>
+<li><p><strong>RT_seq_file</strong> (<em>str</em>) – FASTQ file containing RT reads.</p></li>
+<li><p><strong>RT_bc_objects</strong> (<em>list</em>) – Barcode objects for reporters.</p></li>
+<li><p><strong>reverse_complement</strong> (<em>bool</em>) – Whether to reverse complement reads.</p></li>
+<li><p><strong>reads_threshold_AD</strong> (<em>int</em>) – Minimum reads per AD barcode.</p></li>
+<li><p><strong>reads_threshold_RT</strong> (<em>int</em>) – Minimum reads per RT barcode.</p></li>
+<li><p><strong>step1_map_name</strong> (<em>str</em>) – Name of the Step 1 DuckDB table.</p></li>
+<li><p><strong>step_suffix</strong> (<em>str</em><em>, </em><em>optional</em>) – Suffix appended to the step name.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Dictionary with keys:</dt><dd><ul class="simple">
+<li><p>”AD_step2”: AD DataFrame</p></li>
+<li><p>”RT_step2”: RT DataFrame</p></li>
+<li><p>”step1_overlap”: Overlap statistics</p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scripts.pipelines.TreblPipeline.step1_reads_distribution">
+<span class="sig-name descname"><span class="pre">step1_reads_distribution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bc_objects</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reverse_complement</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/pipelines.html#TreblPipeline.step1_reads_distribution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.pipelines.TreblPipeline.step1_reads_distribution" title="Link to this definition">¶</a></dt>
+<dd><p>Convenience wrapper for Step 1 read distributions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>seq_file</strong> (<em>str</em>) – FASTQ file path.</p></li>
+<li><p><strong>bc_objects</strong> (<em>list</em>) – Barcode objects.</p></li>
+<li><p><strong>reverse_complement</strong> (<em>bool</em>) – Whether to reverse complement reads.</p></li>
+<li><p><strong>step_suffix</strong> (<em>str</em><em>, </em><em>optional</em>) – Suffix appended to the step name.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scripts.pipelines.TreblPipeline.step2_reads_distribution">
+<span class="sig-name descname"><span class="pre">step2_reads_distribution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">AD_seq_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">AD_bc_objects</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">RT_seq_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">RT_bc_objects</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reverse_complement</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/pipelines.html#TreblPipeline.step2_reads_distribution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.pipelines.TreblPipeline.step2_reads_distribution" title="Link to this definition">¶</a></dt>
+<dd><p>Convenience wrapper for Step 2 AD and RT libraries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>AD_seq_file</strong> (<em>str</em>) – FASTQ file for AD reads.</p></li>
+<li><p><strong>AD_bc_objects</strong> (<em>list</em>) – AD barcode objects.</p></li>
+<li><p><strong>RT_seq_file</strong> (<em>str</em>) – FASTQ file for RT reads.</p></li>
+<li><p><strong>RT_bc_objects</strong> (<em>list</em>) – RT barcode objects.</p></li>
+<li><p><strong>reverse_complement</strong> (<em>bool</em>) – Whether to reverse complement reads.</p></li>
+<li><p><strong>step_suffix</strong> (<em>str</em><em>, </em><em>optional</em>) – Suffix appended to the step name.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scripts.pipelines.TreblPipeline.trebl_experiment_analysis">
+<span class="sig-name descname"><span class="pre">trebl_experiment_analysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">AD_seq_files</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">AD_bc_objects</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">RT_seq_files</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">RT_bc_objects</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reverse_complement</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step1_map_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">AD_umi_object</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">RT_umi_object</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reads_threshold_AD</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reads_threshold_RT</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_name_prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'trebl_experiment_'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/pipelines.html#TreblPipeline.trebl_experiment_analysis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.pipelines.TreblPipeline.trebl_experiment_analysis" title="Link to this definition">¶</a></dt>
+<dd><p>Run TREBL experiment analysis for both AD and RT libraries.</p>
+<p>The workflow automatically selects between a UMI or non-UMI
+pipeline depending on whether a UMI object is provided.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>AD_seq_files</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – Paths to FASTQ files containing AD reads.</p></li>
+<li><p><strong>AD_bc_objects</strong> (<em>list</em>) – Barcode objects for AD library extraction.</p></li>
+<li><p><strong>RT_seq_files</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – Paths to FASTQ files containing reporter reads.</p></li>
+<li><p><strong>RT_bc_objects</strong> (<em>list</em>) – Barcode objects for reporter library extraction.</p></li>
+<li><p><strong>reverse_complement</strong> (<em>bool</em>) – Whether reads should be reverse complemented
+prior to barcode extraction.</p></li>
+<li><p><strong>step1_map_name</strong> (<em>str</em>) – DuckDB table name from Step 1 mapping used to
+compute overlap.</p></li>
+<li><p><strong>AD_umi_object</strong> (<em>optional</em>) – UMI object for AD library. If provided,
+UMI deduplication is performed.</p></li>
+<li><p><strong>RT_umi_object</strong> (<em>optional</em>) – UMI object for RT library. If provided,
+UMI deduplication is performed.</p></li>
+<li><p><strong>reads_threshold_AD</strong> (<em>int</em><em>, </em><em>optional</em>) – Minimum reads per AD barcode
+to be retained. Defaults to 1.</p></li>
+<li><p><strong>reads_threshold_RT</strong> (<em>int</em><em>, </em><em>optional</em>) – Minimum reads per RT barcode
+to be retained. Defaults to 1.</p></li>
+<li><p><strong>step_name_prefix</strong> (<em>str</em><em>, </em><em>optional</em>) – Prefix for DuckDB tables and
+output naming. Defaults to “<a href="#id3"><span class="problematic" id="id4">trebl_experiment_</span></a>”.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Dictionary containing the final merged results for AD and RT.</dt><dd><dl class="simple">
+<dt>Keys:</dt><dd><ul class="simple">
+<li><dl class="simple">
+<dt>”AD_results” (pd.DataFrame): TREBL experiment results for AD</dt><dd><p>library, with barcodes and reads or unique UMI counts.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>”RT_results” (pd.DataFrame): TREBL experiment results for reporter</dt><dd><p>library, with barcodes and reads or unique UMI counts.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>If UMI objects are provided, UMI-based deduplication is applied
+and both “complex” and “simple” UMI count tables are merged.</p></li>
+<li><dl class="simple">
+<dt>If <cite>output_path</cite> is set, results are saved as CSV files:</dt><dd><p>“{output_path}/AD_trebl_experiment_results.csv” and
+“{output_path}/RT_trebl_experiment_results.csv”.</p>
+</dd>
+</dl>
+</li>
+<li><p>The method also generates barcode quality/loss plots/</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scripts.pipelines.TreblPipeline.trebl_experiment_reads_distribution">
+<span class="sig-name descname"><span class="pre">trebl_experiment_reads_distribution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">AD_seq_files</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">AD_bc_objects</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">RT_seq_files</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">RT_bc_objects</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reverse_complement</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/pipelines.html#TreblPipeline.trebl_experiment_reads_distribution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.pipelines.TreblPipeline.trebl_experiment_reads_distribution" title="Link to this definition">¶</a></dt>
+<dd><p>Convenience wrapper for TREBL Experiment AD and RT libraries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>AD_seq_file</strong> (<em>str</em>) – FASTQ file for AD reads.</p></li>
+<li><p><strong>AD_bc_objects</strong> (<em>list</em>) – AD barcode objects.</p></li>
+<li><p><strong>RT_seq_file</strong> (<em>str</em>) – FASTQ file for RT reads.</p></li>
+<li><p><strong>RT_bc_objects</strong> (<em>list</em>) – RT barcode objects.</p></li>
+<li><p><strong>reverse_complement</strong> (<em>bool</em>) – Whether to reverse complement reads.</p></li>
+<li><p><strong>step_suffix</strong> (<em>str</em><em>, </em><em>optional</em>) – Suffix appended to the step name.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 </dd></dl>
 
@@ -1172,6 +1506,23 @@ Submit the existing fastp.sh script as a SLURM array job.</p>
 <li><a class="reference internal" href="#scripts.map_refiner.MapRefiner.save_loss_table"><code class="docutils literal notranslate"><span class="pre">MapRefiner.save_loss_table()</span></code></a></li>
 <li><a class="reference internal" href="#scripts.map_refiner.MapRefiner.save_map"><code class="docutils literal notranslate"><span class="pre">MapRefiner.save_map()</span></code></a></li>
 <li><a class="reference internal" href="#scripts.map_refiner.MapRefiner.show_tables"><code class="docutils literal notranslate"><span class="pre">MapRefiner.show_tables()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-scripts.pipelines">scripts.pipelines module</a><ul>
+<li><a class="reference internal" href="#scripts.pipelines.TreblPipeline"><code class="docutils literal notranslate"><span class="pre">TreblPipeline</span></code></a><ul>
+<li><a class="reference internal" href="#scripts.pipelines.TreblPipeline.db_path"><code class="docutils literal notranslate"><span class="pre">TreblPipeline.db_path</span></code></a></li>
+<li><a class="reference internal" href="#scripts.pipelines.TreblPipeline.error_correction"><code class="docutils literal notranslate"><span class="pre">TreblPipeline.error_correction</span></code></a></li>
+<li><a class="reference internal" href="#scripts.pipelines.TreblPipeline.output_figures_path"><code class="docutils literal notranslate"><span class="pre">TreblPipeline.output_figures_path</span></code></a></li>
+<li><a class="reference internal" href="#scripts.pipelines.TreblPipeline.plot_trebl_experiment_loss"><code class="docutils literal notranslate"><span class="pre">TreblPipeline.plot_trebl_experiment_loss()</span></code></a></li>
+<li><a class="reference internal" href="#scripts.pipelines.TreblPipeline.reads_distribution"><code class="docutils literal notranslate"><span class="pre">TreblPipeline.reads_distribution()</span></code></a></li>
+<li><a class="reference internal" href="#scripts.pipelines.TreblPipeline.run_step_1"><code class="docutils literal notranslate"><span class="pre">TreblPipeline.run_step_1()</span></code></a></li>
+<li><a class="reference internal" href="#scripts.pipelines.TreblPipeline.run_step_2"><code class="docutils literal notranslate"><span class="pre">TreblPipeline.run_step_2()</span></code></a></li>
+<li><a class="reference internal" href="#scripts.pipelines.TreblPipeline.step1_reads_distribution"><code class="docutils literal notranslate"><span class="pre">TreblPipeline.step1_reads_distribution()</span></code></a></li>
+<li><a class="reference internal" href="#scripts.pipelines.TreblPipeline.step2_reads_distribution"><code class="docutils literal notranslate"><span class="pre">TreblPipeline.step2_reads_distribution()</span></code></a></li>
+<li><a class="reference internal" href="#scripts.pipelines.TreblPipeline.trebl_experiment_analysis"><code class="docutils literal notranslate"><span class="pre">TreblPipeline.trebl_experiment_analysis()</span></code></a></li>
+<li><a class="reference internal" href="#scripts.pipelines.TreblPipeline.trebl_experiment_reads_distribution"><code class="docutils literal notranslate"><span class="pre">TreblPipeline.trebl_experiment_reads_distribution()</span></code></a></li>
 </ul>
 </li>
 </ul>

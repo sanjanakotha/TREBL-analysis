@@ -395,88 +395,89 @@ class MapRefiner:
         fastq_path = self.generate_fastq_for_whitelist(output_dir, prev_table=table_name)
         fastq_path = Path(fastq_path)
     
-        expected_whitelist = output_dir / f"{fastq_path.stem}_whitelist.txt"
-        expected_log = output_dir / f"{fastq_path.stem}_whitelist.log"
+        # expected_whitelist = output_dir / f"{fastq_path.stem}_whitelist.txt"
+        # expected_log = output_dir / f"{fastq_path.stem}_whitelist.log"
     
-        # Run or reuse whitelist
-        if expected_whitelist.exists() and expected_log.exists():
-            print(f"Whitelist already exists, skipping:\n  {expected_whitelist}")
-            whitelist_path = expected_whitelist
+        # # Run or reuse whitelist
+        # if expected_whitelist.exists() and expected_log.exists():
+        #     print(f"Whitelist already exists, skipping:\n  {expected_whitelist}")
+        #     whitelist_path = expected_whitelist
         
-        else:
-            # Infer expected_bc_count if needed
-            if self.manual_ec_threshold:
-        
-                print("Inferring expected barcode count from grouped reads...")
-        
-                # Build grouped counts from prev_table
-                group_cols_sql = ", ".join(self.cols)
-                tmp_grouped = "__tmp_bc_grouped"
-        
-                self.con.execute(f"""
-                    CREATE OR REPLACE TABLE {tmp_grouped} AS
-                    SELECT {group_cols_sql}, COUNT(*) AS count
-                    FROM {table_name}
-                    GROUP BY {group_cols_sql}
-                """)
-        
-                # Prompt for reads threshold if needed (same behavior as create_thresholded)
-                if not self.reads_threshold:
-                    if self.output_figures_path:
-                        # fig, ax = plt.subplots(figsize=(5, 2.5), dpi=300)
-                        # self.plot_reads_histogram(tmp_grouped, ax = ax, edgecolor = 'none', bins = 100)
-                        fig, ax = plt.subplots(figsize=(5, 2.5), dpi=300)
-                        df_tmp = self.con.execute(f"SELECT count FROM {tmp_grouped}").df()
-                        sns.histplot(df_tmp["count"], bins=100, ax=ax, log_scale = (True, True))
-                        plt.title("Grouped barcode read counts")
-                        plt.show()
-
-                        filename = os.path.join(self.output_figures_path, f"{tmp_grouped}.png")
-                        plt.savefig(filename, bbox_inches="tight")
-        
-                    try:
-                        user_input = input("Enter minimum read count threshold (default = 5): ")
-                        self.reads_threshold = int(user_input) if user_input.strip() != "" else 5
-                    except ValueError:
-                        print("Invalid input. Using default threshold of 5.")
-                        self.reads_threshold = 5
-        
-                print(f"Using reads threshold of {self.reads_threshold}")
-        
-                # Count how many groups exceed threshold
-                expected_bc_count = self.con.execute(f"""
-                    SELECT COUNT(*)
-                    FROM {tmp_grouped}
-                    WHERE count > {self.reads_threshold}
-                """).fetchone()[0]
-        
-                print(f"Inferred expected barcode count: {expected_bc_count}")
-        
-                self.con.execute(f"DROP TABLE IF EXISTS {tmp_grouped}")
-
-                print("Running umi_tools whitelist...")
-                whitelist_outputs = run_whitelist_on_concat_domains(
-                    fastq_path=fastq_path,
-                    output_dir=output_dir,
-                    prefix=None,
-                    set_cell_number=expected_bc_count
-                )
-                whitelist_path = whitelist_outputs["whitelist"]
-
-
-            else:
-                print(f"Using automatic detection of expected barcode count.")
-
-                print("Running umi_tools whitelist...")
-                whitelist_outputs = run_whitelist_on_concat_domains(
-                    fastq_path=fastq_path,
-                    output_dir=output_dir,
-                    prefix=None
-                )
-                whitelist_path = whitelist_outputs["whitelist"]
-
-        
+        # else:
             
+        # Infer expected_bc_count if needed
+        if self.manual_ec_threshold:
+    
+            print("Inferring expected barcode count from grouped reads...")
+    
+            # Build grouped counts from prev_table
+            group_cols_sql = ", ".join(self.cols)
+            tmp_grouped = "__tmp_bc_grouped"
+    
+            self.con.execute(f"""
+                CREATE OR REPLACE TABLE {tmp_grouped} AS
+                SELECT {group_cols_sql}, COUNT(*) AS count
+                FROM {table_name}
+                GROUP BY {group_cols_sql}
+            """)
+    
+            # Prompt for reads threshold if needed (same behavior as create_thresholded)
+            if not self.reads_threshold:
+                if self.output_figures_path:
+                    # fig, ax = plt.subplots(figsize=(5, 2.5), dpi=300)
+                    # self.plot_reads_histogram(tmp_grouped, ax = ax, edgecolor = 'none', bins = 100)
+                    fig, ax = plt.subplots(figsize=(5, 2.5), dpi=300)
+                    df_tmp = self.con.execute(f"SELECT count FROM {tmp_grouped}").df()
+                    sns.histplot(df_tmp["count"], bins=100, ax=ax, log_scale = (True, True))
+                    plt.title("Grouped barcode read counts")
+                    plt.show()
+
+                    filename = os.path.join(self.output_figures_path, f"{tmp_grouped}.png")
+                    plt.savefig(filename, bbox_inches="tight")
+    
+                try:
+                    user_input = input("Enter minimum read count threshold (default = 5): ")
+                    self.reads_threshold = int(user_input) if user_input.strip() != "" else 5
+                except ValueError:
+                    print("Invalid input. Using default threshold of 5.")
+                    self.reads_threshold = 5
+    
+            print(f"Using reads threshold of {self.reads_threshold}")
+    
+            # Count how many groups exceed threshold
+            expected_bc_count = self.con.execute(f"""
+                SELECT COUNT(*)
+                FROM {tmp_grouped}
+                WHERE count > {self.reads_threshold}
+            """).fetchone()[0]
+    
+            print(f"Inferred expected barcode count: {expected_bc_count}")
+    
+            self.con.execute(f"DROP TABLE IF EXISTS {tmp_grouped}")
+
+            print("Running umi_tools whitelist...")
+            whitelist_outputs = run_whitelist_on_concat_domains(
+                fastq_path=fastq_path,
+                output_dir=output_dir,
+                prefix=None,
+                set_cell_number=expected_bc_count
+            )
+            whitelist_path = whitelist_outputs["whitelist"]
+
+
+        else:
+            print(f"Using automatic detection of expected barcode count.")
+
+            print("Running umi_tools whitelist...")
+            whitelist_outputs = run_whitelist_on_concat_domains(
+                fastq_path=fastq_path,
+                output_dir=output_dir,
+                prefix=None
+            )
+            whitelist_path = whitelist_outputs["whitelist"]
+
+    
+        
         # Load whitelist mapping
         mapping_df = error_correct.convert_txt_to_whitelist_mapping_df_from_path(whitelist_path)
         print(f"Unique canonical barcodes: {mapping_df['canonical'].nunique()}")
@@ -514,7 +515,9 @@ class MapRefiner:
         self.con.execute(f"""
             ALTER TABLE {new_table} DROP COLUMN concat_canonical;
         """)
-    
+
+        os.remove(fastq_path) # Removing temp fastq file created
+        
         print(f"Whitelist application complete for {self.step_name} at {new_table}")
     
     @time_it
@@ -573,7 +576,7 @@ class MapRefiner:
             self.apply_whitelist(output_dir, prev_table = self._prefixed(previous_table))
             
         except Exception as e:
-            print(f"⚠️ Error correction failed: {e}")
+            print(f"Error correction failed: {e}")
 
     @time_it
     def create_unique_target(self, previous_table):

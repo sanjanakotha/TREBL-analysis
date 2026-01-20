@@ -44,6 +44,14 @@ scripts.map\_refiner module
    :show-inheritance:
    :undoc-members:
 
+scripts.pipelines module
+------------------------
+
+.. automodule:: scripts.pipelines
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 scripts.plotting module
 -----------------------
 

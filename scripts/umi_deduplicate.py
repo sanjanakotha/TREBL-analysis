@@ -154,7 +154,7 @@ class UMIDeduplicator:
 
     def run_simple_deduplication(self):
         self.unique_umis_per_barcodes()
-        return self.merge_simple_with_step1_map()
+        #return self.merge_simple_with_step1_map()
 
     def show_tables(self):
         return self.con.execute("SHOW TABLES").fetchdf()

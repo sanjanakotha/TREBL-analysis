@@ -108,7 +108,7 @@ class InitialMapper:
     def _extract_sequence_object(self, seq_obj):
         """
         Extract a barcode or UMI sequence into a new column and compute quality.
-
+    
         Args:
             seq_obj (object): Barcode or UMI object with attributes:
                                - name (str)
@@ -117,29 +117,46 @@ class InitialMapper:
                                - length (int)
         """
         con = self.con
-
-        # Build regex
-        if seq_obj.post == "" or seq_obj.preceder == "":
-            regex = f"{seq_obj.preceder}(.{{1,{seq_obj.length}}}){seq_obj.post}"
+    
+        # Case 1: no preceder AND no post → take last N bases
+        if seq_obj.preceder == "" and seq_obj.post == "":
+            print(f"{seq_obj.name}: extracting last {seq_obj.length} bases")
+    
+            con.execute(f"""
+                ALTER TABLE seq ADD COLUMN {seq_obj.name} TEXT;
+    
+                UPDATE seq
+                SET {seq_obj.name} = CASE
+                    WHEN length(sequence) >= {seq_obj.length}
+                    THEN substr(sequence, length(sequence) - {seq_obj.length} + 1, {seq_obj.length})
+                    ELSE ''
+                END;
+            """)
+    
+        # Case 2: both preceder and post exist → regex extraction
         else:
             regex = f"{seq_obj.preceder}(.*){seq_obj.post}"
-        print(f"Regex for {seq_obj.name}: {regex}")
-
-        # Add sequence column
-        con.execute(f"""
-            ALTER TABLE seq ADD COLUMN {seq_obj.name} TEXT;
-            UPDATE seq
-            SET {seq_obj.name} = coalesce(regexp_extract(sequence::VARCHAR, '{regex}', 1), '');
-        """)
-
+            print(f"Regex for {seq_obj.name}: {regex}")
+    
+            con.execute(f"""
+                ALTER TABLE seq ADD COLUMN {seq_obj.name} TEXT;
+    
+                UPDATE seq
+                SET {seq_obj.name} = coalesce(
+                    regexp_extract(sequence::VARCHAR, '{regex}', 1),
+                    ''
+                );
+            """)
+    
         # Add quality flag column
         qual_col = f"{seq_obj.name}_qual"
         con.execute(f"ALTER TABLE seq ADD COLUMN {qual_col} BOOLEAN;")
+    
         con.execute(f"""
             UPDATE seq
             SET {qual_col} = LENGTH({seq_obj.name}) = {seq_obj.length};
         """)
-
+    
     @time_it
     def extract_barcodes(self):
         """Extract all barcode columns and compute their quality flags"""
@@ -153,12 +170,12 @@ class InitialMapper:
         if self.umi_object:
             print("Extracting UMI...")
             self._extract_sequence_object(self.umi_object)
-
+                
     @time_it
-    def merge_design(self):
-        """Merge with design file if provided, or create default Designed column"""
+    def merge_design(self):        
+        """Merge with design file if provided, or create default Designed column"""              
         con = self.con
-        if self.design_file_path:
+        if self.design_file_path and "AD" in self.cols:
             print("Merging with design file...")
             con.execute(f"""
                 CREATE OR REPLACE TABLE design AS
@@ -166,22 +183,25 @@ class InitialMapper:
                 FROM read_csv_auto('{self.design_file_path}', header=False)
             """)
             con.execute(f"""
-                CREATE OR REPLACE TABLE {self.table_prefix}initial AS
+                CREATE OR REPLACE TABLE {self.table_prefix}initial_tmp AS
                 SELECT s.*, CASE WHEN d.AD IS NOT NULL THEN 1 ELSE 0 END AS Designed
                 FROM seq s
                 LEFT JOIN design d USING(AD);
             """)
         else:
             con.execute(f"""
-                CREATE OR REPLACE TABLE {self.table_prefix}initial AS
+                CREATE OR REPLACE TABLE {self.table_prefix}initial_tmp AS
                 SELECT *, 1 AS Designed
                 FROM seq;
             """)
         con.execute("DROP TABLE IF EXISTS seq;")
 
         # Drop the sequence column from the new table
-        con.execute(f"ALTER TABLE {self.table_prefix}initial DROP COLUMN sequence;")
-
+        con.execute(f"ALTER TABLE {self.table_prefix}initial_tmp DROP COLUMN sequence;")
+        con.execute(
+            f"ALTER TABLE {self.table_prefix}initial_tmp RENAME TO {self.table_prefix}initial;"
+        )
+        
     def _run_pipeline(self):
         """Internal helper: runs the full mapping pipeline."""
         self.read_fastq()
@@ -190,22 +210,45 @@ class InitialMapper:
         self.extract_umi()
         self.merge_design()
         print("Mapping complete.")
+
+    def _table_exists(self, table_name: str) -> bool:
+        return self.con.execute(
+            """
+            SELECT COUNT(*) > 0
+            FROM information_schema.tables
+            WHERE table_name = ?
+            """,
+            [table_name],
+        ).fetchone()[0]
+
     
     def create_map(self):
-        """Run the full mapping pipeline on all reads."""
+        """Run the full mapping pipeline on all reads (skip if already exists)."""    
+        initial_table = f"{self.table_prefix}initial"
+        
+        if self._table_exists(initial_table):
+            print(f"✓ Initial map already exists: {initial_table} — skipping")
+            return
+    
         self.test_n_reads = None  # ensure no test limit
         self._run_pipeline()
+
     
     def create_test_map(self, test_n_reads: int = 100):
         """
         Run the mapping pipeline on a limited number of reads for testing.
+        Skips if initial map already exists.
+        """    
+        initial_table = f"{self.table_prefix}initial"
 
-        Args:
-            test_n_reads (int): Number of reads to process for testing. Defaults to 100.
-        """        
+        if self._table_exists(initial_table):
+            print(f"✓ Initial map already exists: {initial_table} — skipping test map")
+            return
+    
         self.test_n_reads = test_n_reads
         self._run_pipeline()
-        self.test_n_reads = None  # reset after test   
+        self.test_n_reads = None
+  
 
     def preview_map(self):
         """

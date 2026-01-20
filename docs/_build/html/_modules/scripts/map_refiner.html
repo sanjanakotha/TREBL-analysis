@@ -657,88 +657,89 @@
         <span class="n">fastq_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_fastq_for_whitelist</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">prev_table</span><span class="o">=</span><span class="n">table_name</span><span class="p">)</span>
         <span class="n">fastq_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">fastq_path</span><span class="p">)</span>
     
-        <span class="n">expected_whitelist</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">fastq_path</span><span class="o">.</span><span class="n">stem</span><span class="si">}</span><span class="s2">_whitelist.txt&quot;</span>
-        <span class="n">expected_log</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">fastq_path</span><span class="o">.</span><span class="n">stem</span><span class="si">}</span><span class="s2">_whitelist.log&quot;</span>
+        <span class="c1"># expected_whitelist = output_dir / f&quot;{fastq_path.stem}_whitelist.txt&quot;</span>
+        <span class="c1"># expected_log = output_dir / f&quot;{fastq_path.stem}_whitelist.log&quot;</span>
     
-        <span class="c1"># Run or reuse whitelist</span>
-        <span class="k">if</span> <span class="n">expected_whitelist</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="n">expected_log</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Whitelist already exists, skipping:</span><span class="se">\n</span><span class="s2">  </span><span class="si">{</span><span class="n">expected_whitelist</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="n">whitelist_path</span> <span class="o">=</span> <span class="n">expected_whitelist</span>
+        <span class="c1"># # Run or reuse whitelist</span>
+        <span class="c1"># if expected_whitelist.exists() and expected_log.exists():</span>
+        <span class="c1">#     print(f&quot;Whitelist already exists, skipping:\n  {expected_whitelist}&quot;)</span>
+        <span class="c1">#     whitelist_path = expected_whitelist</span>
         
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Infer expected_bc_count if needed</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">manual_ec_threshold</span><span class="p">:</span>
-        
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Inferring expected barcode count from grouped reads...&quot;</span><span class="p">)</span>
-        
-                <span class="c1"># Build grouped counts from prev_table</span>
-                <span class="n">group_cols_sql</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cols</span><span class="p">)</span>
-                <span class="n">tmp_grouped</span> <span class="o">=</span> <span class="s2">&quot;__tmp_bc_grouped&quot;</span>
-        
-                <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">                    CREATE OR REPLACE TABLE </span><span class="si">{</span><span class="n">tmp_grouped</span><span class="si">}</span><span class="s2"> AS</span>
-<span class="s2">                    SELECT </span><span class="si">{</span><span class="n">group_cols_sql</span><span class="si">}</span><span class="s2">, COUNT(*) AS count</span>
-<span class="s2">                    FROM </span><span class="si">{</span><span class="n">table_name</span><span class="si">}</span>
-<span class="s2">                    GROUP BY </span><span class="si">{</span><span class="n">group_cols_sql</span><span class="si">}</span>
-<span class="s2">                &quot;&quot;&quot;</span><span class="p">)</span>
-        
-                <span class="c1"># Prompt for reads threshold if needed (same behavior as create_thresholded)</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_figures_path</span><span class="p">:</span>
-                        <span class="c1"># fig, ax = plt.subplots(figsize=(5, 2.5), dpi=300)</span>
-                        <span class="c1"># self.plot_reads_histogram(tmp_grouped, ax = ax, edgecolor = &#39;none&#39;, bins = 100)</span>
-                        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
-                        <span class="n">df_tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SELECT count FROM </span><span class="si">{</span><span class="n">tmp_grouped</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">df</span><span class="p">()</span>
-                        <span class="n">sns</span><span class="o">.</span><span class="n">histplot</span><span class="p">(</span><span class="n">df_tmp</span><span class="p">[</span><span class="s2">&quot;count&quot;</span><span class="p">],</span> <span class="n">bins</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">log_scale</span> <span class="o">=</span> <span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
-                        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Grouped barcode read counts&quot;</span><span class="p">)</span>
-                        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-
-                        <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_figures_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">tmp_grouped</span><span class="si">}</span><span class="s2">.png&quot;</span><span class="p">)</span>
-                        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
-        
-                    <span class="k">try</span><span class="p">:</span>
-                        <span class="n">user_input</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Enter minimum read count threshold (default = 5): &quot;</span><span class="p">)</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">user_input</span><span class="p">)</span> <span class="k">if</span> <span class="n">user_input</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span> <span class="k">else</span> <span class="mi">5</span>
-                    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Invalid input. Using default threshold of 5.&quot;</span><span class="p">)</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span> <span class="o">=</span> <span class="mi">5</span>
-        
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using reads threshold of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        
-                <span class="c1"># Count how many groups exceed threshold</span>
-                <span class="n">expected_bc_count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">                    SELECT COUNT(*)</span>
-<span class="s2">                    FROM </span><span class="si">{</span><span class="n">tmp_grouped</span><span class="si">}</span>
-<span class="s2">                    WHERE count &gt; </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span><span class="si">}</span>
-<span class="s2">                &quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
-        
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Inferred expected barcode count: </span><span class="si">{</span><span class="n">expected_bc_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        
-                <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DROP TABLE IF EXISTS </span><span class="si">{</span><span class="n">tmp_grouped</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Running umi_tools whitelist...&quot;</span><span class="p">)</span>
-                <span class="n">whitelist_outputs</span> <span class="o">=</span> <span class="n">run_whitelist_on_concat_domains</span><span class="p">(</span>
-                    <span class="n">fastq_path</span><span class="o">=</span><span class="n">fastq_path</span><span class="p">,</span>
-                    <span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span><span class="p">,</span>
-                    <span class="n">prefix</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                    <span class="n">set_cell_number</span><span class="o">=</span><span class="n">expected_bc_count</span>
-                <span class="p">)</span>
-                <span class="n">whitelist_path</span> <span class="o">=</span> <span class="n">whitelist_outputs</span><span class="p">[</span><span class="s2">&quot;whitelist&quot;</span><span class="p">]</span>
-
-
-            <span class="k">else</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using automatic detection of expected barcode count.&quot;</span><span class="p">)</span>
-
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Running umi_tools whitelist...&quot;</span><span class="p">)</span>
-                <span class="n">whitelist_outputs</span> <span class="o">=</span> <span class="n">run_whitelist_on_concat_domains</span><span class="p">(</span>
-                    <span class="n">fastq_path</span><span class="o">=</span><span class="n">fastq_path</span><span class="p">,</span>
-                    <span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span><span class="p">,</span>
-                    <span class="n">prefix</span><span class="o">=</span><span class="kc">None</span>
-                <span class="p">)</span>
-                <span class="n">whitelist_path</span> <span class="o">=</span> <span class="n">whitelist_outputs</span><span class="p">[</span><span class="s2">&quot;whitelist&quot;</span><span class="p">]</span>
-
-        
+        <span class="c1"># else:</span>
             
+        <span class="c1"># Infer expected_bc_count if needed</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">manual_ec_threshold</span><span class="p">:</span>
+    
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Inferring expected barcode count from grouped reads...&quot;</span><span class="p">)</span>
+    
+            <span class="c1"># Build grouped counts from prev_table</span>
+            <span class="n">group_cols_sql</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cols</span><span class="p">)</span>
+            <span class="n">tmp_grouped</span> <span class="o">=</span> <span class="s2">&quot;__tmp_bc_grouped&quot;</span>
+    
+            <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                CREATE OR REPLACE TABLE </span><span class="si">{</span><span class="n">tmp_grouped</span><span class="si">}</span><span class="s2"> AS</span>
+<span class="s2">                SELECT </span><span class="si">{</span><span class="n">group_cols_sql</span><span class="si">}</span><span class="s2">, COUNT(*) AS count</span>
+<span class="s2">                FROM </span><span class="si">{</span><span class="n">table_name</span><span class="si">}</span>
+<span class="s2">                GROUP BY </span><span class="si">{</span><span class="n">group_cols_sql</span><span class="si">}</span>
+<span class="s2">            &quot;&quot;&quot;</span><span class="p">)</span>
+    
+            <span class="c1"># Prompt for reads threshold if needed (same behavior as create_thresholded)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_figures_path</span><span class="p">:</span>
+                    <span class="c1"># fig, ax = plt.subplots(figsize=(5, 2.5), dpi=300)</span>
+                    <span class="c1"># self.plot_reads_histogram(tmp_grouped, ax = ax, edgecolor = &#39;none&#39;, bins = 100)</span>
+                    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+                    <span class="n">df_tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SELECT count FROM </span><span class="si">{</span><span class="n">tmp_grouped</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">df</span><span class="p">()</span>
+                    <span class="n">sns</span><span class="o">.</span><span class="n">histplot</span><span class="p">(</span><span class="n">df_tmp</span><span class="p">[</span><span class="s2">&quot;count&quot;</span><span class="p">],</span> <span class="n">bins</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">log_scale</span> <span class="o">=</span> <span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
+                    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Grouped barcode read counts&quot;</span><span class="p">)</span>
+                    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+                    <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_figures_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">tmp_grouped</span><span class="si">}</span><span class="s2">.png&quot;</span><span class="p">)</span>
+                    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+    
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">user_input</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Enter minimum read count threshold (default = 5): &quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">user_input</span><span class="p">)</span> <span class="k">if</span> <span class="n">user_input</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span> <span class="k">else</span> <span class="mi">5</span>
+                <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Invalid input. Using default threshold of 5.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span> <span class="o">=</span> <span class="mi">5</span>
+    
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using reads threshold of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+            <span class="c1"># Count how many groups exceed threshold</span>
+            <span class="n">expected_bc_count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                SELECT COUNT(*)</span>
+<span class="s2">                FROM </span><span class="si">{</span><span class="n">tmp_grouped</span><span class="si">}</span>
+<span class="s2">                WHERE count &gt; </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">reads_threshold</span><span class="si">}</span>
+<span class="s2">            &quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+    
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Inferred expected barcode count: </span><span class="si">{</span><span class="n">expected_bc_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+            <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DROP TABLE IF EXISTS </span><span class="si">{</span><span class="n">tmp_grouped</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Running umi_tools whitelist...&quot;</span><span class="p">)</span>
+            <span class="n">whitelist_outputs</span> <span class="o">=</span> <span class="n">run_whitelist_on_concat_domains</span><span class="p">(</span>
+                <span class="n">fastq_path</span><span class="o">=</span><span class="n">fastq_path</span><span class="p">,</span>
+                <span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span><span class="p">,</span>
+                <span class="n">prefix</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">set_cell_number</span><span class="o">=</span><span class="n">expected_bc_count</span>
+            <span class="p">)</span>
+            <span class="n">whitelist_path</span> <span class="o">=</span> <span class="n">whitelist_outputs</span><span class="p">[</span><span class="s2">&quot;whitelist&quot;</span><span class="p">]</span>
+
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using automatic detection of expected barcode count.&quot;</span><span class="p">)</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Running umi_tools whitelist...&quot;</span><span class="p">)</span>
+            <span class="n">whitelist_outputs</span> <span class="o">=</span> <span class="n">run_whitelist_on_concat_domains</span><span class="p">(</span>
+                <span class="n">fastq_path</span><span class="o">=</span><span class="n">fastq_path</span><span class="p">,</span>
+                <span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span><span class="p">,</span>
+                <span class="n">prefix</span><span class="o">=</span><span class="kc">None</span>
+            <span class="p">)</span>
+            <span class="n">whitelist_path</span> <span class="o">=</span> <span class="n">whitelist_outputs</span><span class="p">[</span><span class="s2">&quot;whitelist&quot;</span><span class="p">]</span>
+
+    
+        
         <span class="c1"># Load whitelist mapping</span>
         <span class="n">mapping_df</span> <span class="o">=</span> <span class="n">error_correct</span><span class="o">.</span><span class="n">convert_txt_to_whitelist_mapping_df_from_path</span><span class="p">(</span><span class="n">whitelist_path</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unique canonical barcodes: </span><span class="si">{</span><span class="n">mapping_df</span><span class="p">[</span><span class="s1">&#39;canonical&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">nunique</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -776,7 +777,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">            ALTER TABLE </span><span class="si">{</span><span class="n">new_table</span><span class="si">}</span><span class="s2"> DROP COLUMN concat_canonical;</span>
 <span class="s2">        &quot;&quot;&quot;</span><span class="p">)</span>
-    
+
+        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">fastq_path</span><span class="p">)</span> <span class="c1"># Removing temp fastq file created</span>
+        
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Whitelist application complete for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2"> at </span><span class="si">{</span><span class="n">new_table</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 
     
@@ -841,7 +844,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">apply_whitelist</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">prev_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefixed</span><span class="p">(</span><span class="n">previous_table</span><span class="p">))</span>
             
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;⚠️ Error correction failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error correction failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="MapRefiner.create_unique_target">

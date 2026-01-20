@@ -347,7 +347,7 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">_extract_sequence_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq_obj</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Extract a barcode or UMI sequence into a new column and compute quality.</span>
-
+<span class="sd">    </span>
 <span class="sd">        Args:</span>
 <span class="sd">            seq_obj (object): Barcode or UMI object with attributes:</span>
 <span class="sd">                               - name (str)</span>
@@ -356,29 +356,46 @@
 <span class="sd">                               - length (int)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">con</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">con</span>
-
-        <span class="c1"># Build regex</span>
-        <span class="k">if</span> <span class="n">seq_obj</span><span class="o">.</span><span class="n">post</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span> <span class="ow">or</span> <span class="n">seq_obj</span><span class="o">.</span><span class="n">preceder</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
-            <span class="n">regex</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">seq_obj</span><span class="o">.</span><span class="n">preceder</span><span class="si">}</span><span class="s2">(.</span><span class="se">{{</span><span class="s2">1,</span><span class="si">{</span><span class="n">seq_obj</span><span class="o">.</span><span class="n">length</span><span class="si">}</span><span class="se">}}</span><span class="s2">)</span><span class="si">{</span><span class="n">seq_obj</span><span class="o">.</span><span class="n">post</span><span class="si">}</span><span class="s2">&quot;</span>
+    
+        <span class="c1"># Case 1: no preceder AND no post → take last N bases</span>
+        <span class="k">if</span> <span class="n">seq_obj</span><span class="o">.</span><span class="n">preceder</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span> <span class="ow">and</span> <span class="n">seq_obj</span><span class="o">.</span><span class="n">post</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">seq_obj</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: extracting last </span><span class="si">{</span><span class="n">seq_obj</span><span class="o">.</span><span class="n">length</span><span class="si">}</span><span class="s2"> bases&quot;</span><span class="p">)</span>
+    
+            <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                ALTER TABLE seq ADD COLUMN </span><span class="si">{</span><span class="n">seq_obj</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> TEXT;</span>
+<span class="s2">    </span>
+<span class="s2">                UPDATE seq</span>
+<span class="s2">                SET </span><span class="si">{</span><span class="n">seq_obj</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> = CASE</span>
+<span class="s2">                    WHEN length(sequence) &gt;= </span><span class="si">{</span><span class="n">seq_obj</span><span class="o">.</span><span class="n">length</span><span class="si">}</span>
+<span class="s2">                    THEN substr(sequence, length(sequence) - </span><span class="si">{</span><span class="n">seq_obj</span><span class="o">.</span><span class="n">length</span><span class="si">}</span><span class="s2"> + 1, </span><span class="si">{</span><span class="n">seq_obj</span><span class="o">.</span><span class="n">length</span><span class="si">}</span><span class="s2">)</span>
+<span class="s2">                    ELSE &#39;&#39;</span>
+<span class="s2">                END;</span>
+<span class="s2">            &quot;&quot;&quot;</span><span class="p">)</span>
+    
+        <span class="c1"># Case 2: both preceder and post exist → regex extraction</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">regex</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">seq_obj</span><span class="o">.</span><span class="n">preceder</span><span class="si">}</span><span class="s2">(.*)</span><span class="si">{</span><span class="n">seq_obj</span><span class="o">.</span><span class="n">post</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Regex for </span><span class="si">{</span><span class="n">seq_obj</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">regex</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-        <span class="c1"># Add sequence column</span>
-        <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">            ALTER TABLE seq ADD COLUMN </span><span class="si">{</span><span class="n">seq_obj</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> TEXT;</span>
-<span class="s2">            UPDATE seq</span>
-<span class="s2">            SET </span><span class="si">{</span><span class="n">seq_obj</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> = coalesce(regexp_extract(sequence::VARCHAR, &#39;</span><span class="si">{</span><span class="n">regex</span><span class="si">}</span><span class="s2">&#39;, 1), &#39;&#39;);</span>
-<span class="s2">        &quot;&quot;&quot;</span><span class="p">)</span>
-
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Regex for </span><span class="si">{</span><span class="n">seq_obj</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">regex</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+            <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                ALTER TABLE seq ADD COLUMN </span><span class="si">{</span><span class="n">seq_obj</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> TEXT;</span>
+<span class="s2">    </span>
+<span class="s2">                UPDATE seq</span>
+<span class="s2">                SET </span><span class="si">{</span><span class="n">seq_obj</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> = coalesce(</span>
+<span class="s2">                    regexp_extract(sequence::VARCHAR, &#39;</span><span class="si">{</span><span class="n">regex</span><span class="si">}</span><span class="s2">&#39;, 1),</span>
+<span class="s2">                    &#39;&#39;</span>
+<span class="s2">                );</span>
+<span class="s2">            &quot;&quot;&quot;</span><span class="p">)</span>
+    
         <span class="c1"># Add quality flag column</span>
         <span class="n">qual_col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">seq_obj</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_qual&quot;</span>
         <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ALTER TABLE seq ADD COLUMN </span><span class="si">{</span><span class="n">qual_col</span><span class="si">}</span><span class="s2"> BOOLEAN;&quot;</span><span class="p">)</span>
+    
         <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">            UPDATE seq</span>
 <span class="s2">            SET </span><span class="si">{</span><span class="n">qual_col</span><span class="si">}</span><span class="s2"> = LENGTH(</span><span class="si">{</span><span class="n">seq_obj</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">) = </span><span class="si">{</span><span class="n">seq_obj</span><span class="o">.</span><span class="n">length</span><span class="si">}</span><span class="s2">;</span>
 <span class="s2">        &quot;&quot;&quot;</span><span class="p">)</span>
-
+    
 <div class="viewcode-block" id="InitialMapper.extract_barcodes">
 <a class="viewcode-back" href="../../scripts.html#scripts.initial_map.InitialMapper.extract_barcodes">[docs]</a>
     <span class="nd">@time_it</span>
@@ -398,14 +415,14 @@
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Extracting UMI...&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_extract_sequence_object</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">umi_object</span><span class="p">)</span></div>
 
-
+                
 <div class="viewcode-block" id="InitialMapper.merge_design">
 <a class="viewcode-back" href="../../scripts.html#scripts.initial_map.InitialMapper.merge_design">[docs]</a>
     <span class="nd">@time_it</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">merge_design</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Merge with design file if provided, or create default Designed column&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">merge_design</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>        
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Merge with design file if provided, or create default Designed column&quot;&quot;&quot;</span>              
         <span class="n">con</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">con</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">design_file_path</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">design_file_path</span> <span class="ow">and</span> <span class="s2">&quot;AD&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cols</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Merging with design file...&quot;</span><span class="p">)</span>
             <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">                CREATE OR REPLACE TABLE design AS</span>
@@ -413,23 +430,26 @@
 <span class="s2">                FROM read_csv_auto(&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">design_file_path</span><span class="si">}</span><span class="s2">&#39;, header=False)</span>
 <span class="s2">            &quot;&quot;&quot;</span><span class="p">)</span>
             <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">                CREATE OR REPLACE TABLE </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">table_prefix</span><span class="si">}</span><span class="s2">initial AS</span>
+<span class="s2">                CREATE OR REPLACE TABLE </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">table_prefix</span><span class="si">}</span><span class="s2">initial_tmp AS</span>
 <span class="s2">                SELECT s.*, CASE WHEN d.AD IS NOT NULL THEN 1 ELSE 0 END AS Designed</span>
 <span class="s2">                FROM seq s</span>
 <span class="s2">                LEFT JOIN design d USING(AD);</span>
 <span class="s2">            &quot;&quot;&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">                CREATE OR REPLACE TABLE </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">table_prefix</span><span class="si">}</span><span class="s2">initial AS</span>
+<span class="s2">                CREATE OR REPLACE TABLE </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">table_prefix</span><span class="si">}</span><span class="s2">initial_tmp AS</span>
 <span class="s2">                SELECT *, 1 AS Designed</span>
 <span class="s2">                FROM seq;</span>
 <span class="s2">            &quot;&quot;&quot;</span><span class="p">)</span>
         <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;DROP TABLE IF EXISTS seq;&quot;</span><span class="p">)</span>
 
         <span class="c1"># Drop the sequence column from the new table</span>
-        <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ALTER TABLE </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">table_prefix</span><span class="si">}</span><span class="s2">initial DROP COLUMN sequence;&quot;</span><span class="p">)</span></div>
+        <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ALTER TABLE </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">table_prefix</span><span class="si">}</span><span class="s2">initial_tmp DROP COLUMN sequence;&quot;</span><span class="p">)</span>
+        <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;ALTER TABLE </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">table_prefix</span><span class="si">}</span><span class="s2">initial_tmp RENAME TO </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">table_prefix</span><span class="si">}</span><span class="s2">initial;&quot;</span>
+        <span class="p">)</span></div>
 
-
+        
     <span class="k">def</span><span class="w"> </span><span class="nf">_run_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Internal helper: runs the full mapping pipeline.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">read_fastq</span><span class="p">()</span>
@@ -438,13 +458,31 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">extract_umi</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">merge_design</span><span class="p">()</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Mapping complete.&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_table_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">table_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            SELECT COUNT(*) &gt; 0</span>
+<span class="sd">            FROM information_schema.tables</span>
+<span class="sd">            WHERE table_name = ?</span>
+<span class="sd">            &quot;&quot;&quot;</span><span class="p">,</span>
+            <span class="p">[</span><span class="n">table_name</span><span class="p">],</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+
     
 <div class="viewcode-block" id="InitialMapper.create_map">
 <a class="viewcode-back" href="../../scripts.html#scripts.initial_map.InitialMapper.create_map">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">create_map</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run the full mapping pipeline on all reads.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run the full mapping pipeline on all reads (skip if already exists).&quot;&quot;&quot;</span>    
+        <span class="n">initial_table</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">table_prefix</span><span class="si">}</span><span class="s2">initial&quot;</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_table_exists</span><span class="p">(</span><span class="n">initial_table</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✓ Initial map already exists: </span><span class="si">{</span><span class="n">initial_table</span><span class="si">}</span><span class="s2"> — skipping&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+    
         <span class="bp">self</span><span class="o">.</span><span class="n">test_n_reads</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># ensure no test limit</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_run_pipeline</span><span class="p">()</span></div>
+
 
     
 <div class="viewcode-block" id="InitialMapper.create_test_map">
@@ -452,14 +490,19 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">create_test_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test_n_reads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Run the mapping pipeline on a limited number of reads for testing.</span>
+<span class="sd">        Skips if initial map already exists.</span>
+<span class="sd">        &quot;&quot;&quot;</span>    
+        <span class="n">initial_table</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">table_prefix</span><span class="si">}</span><span class="s2">initial&quot;</span>
 
-<span class="sd">        Args:</span>
-<span class="sd">            test_n_reads (int): Number of reads to process for testing. Defaults to 100.</span>
-<span class="sd">        &quot;&quot;&quot;</span>        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_table_exists</span><span class="p">(</span><span class="n">initial_table</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✓ Initial map already exists: </span><span class="si">{</span><span class="n">initial_table</span><span class="si">}</span><span class="s2"> — skipping test map&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+    
         <span class="bp">self</span><span class="o">.</span><span class="n">test_n_reads</span> <span class="o">=</span> <span class="n">test_n_reads</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_run_pipeline</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">test_n_reads</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># reset after test   </span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">test_n_reads</span> <span class="o">=</span> <span class="kc">None</span></div>
 
+  
 
 <div class="viewcode-block" id="InitialMapper.preview_map">
 <a class="viewcode-back" href="../../scripts.html#scripts.initial_map.InitialMapper.preview_map">[docs]</a>

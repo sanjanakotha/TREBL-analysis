@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=yeast_pool_C_umi_trebl_experiment_RT
 #SBATCH --account=fc_mvslab
-#SBATCH --partition=savio3
+#SBATCH --partition=savio2
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=24
 #SBATCH --time=12:00:00
