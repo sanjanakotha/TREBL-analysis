@@ -322,6 +322,7 @@ Using the pipeline for batch processing:
 .. code-block:: python
 
    from scripts.pipelines import TreblPipeline
+   from pathlib import Path
    import glob
    
    # Find all FASTQ files
@@ -329,10 +330,13 @@ Using the pipeline for batch processing:
    
    # Process each file
    for fastq_file in fastq_files:
+       # Extract filename without extension
+       filename = Path(fastq_file).stem.replace('.fastq', '')
+       
        pipeline = TreblPipeline(
-           db_path=f"./{fastq_file.stem}.db",
+           db_path=f"./{filename}.db",
            design_file_path="./design.csv",
-           output_path=f"./output/{fastq_file.stem}",
+           output_path=f"./output/{filename}",
        )
        
        pipeline.run_step1(
