@@ -228,7 +228,7 @@ class TreblPipeline:
             base_name = os.path.basename(file_path)
             name_only = base_name.split('.')[0]
             step_name = f"{step_name_base}_{name_only}"
-            self.reads_distribution(file_path, AD_bc_objects, step_name, reverse_complement)
+            self.reads_distribution(file_path, RT_bc_objects, step_name, reverse_complement)
             
     def run_step_1(
         self,
@@ -310,7 +310,8 @@ class TreblPipeline:
         """
 
 
-        step_name = step_suffix + ""
+        step_name = "step1" + step_suffix
+
         
         # Initial mapping
         self._run_initial_mappers([
@@ -459,13 +460,9 @@ class TreblPipeline:
             "step1_overlap": overlap
         }
 
-
-    def _duckdb_safe_name(base_name: str) -> str:
-        """
-        Take a filename and convert it into a safe SQL identifier.
-        Replaces anything that isn’t alphanumeric or underscore with underscore.
-        """
-        name = name.replace("-", "_").replace(" ", "_")
+    
+    def _duckdb_safe_name(self, base_name):
+        name = base_name.replace("-", "_").replace(" ", "_")
         name = re.sub(r'[^0-9a-zA-Z_]', '_', name)
         if re.match(r'^\d', name):
             name = f"_{name}"
@@ -514,7 +511,7 @@ class TreblPipeline:
         for file_path in seq_files:
             base_name = os.path.basename(file_path)
             name_only = base_name.split('.')[0]
-            name_only = _duckdb_safe_name(name_only)
+            name_only = self._duckdb_safe_name(name_only)
             step_name = f"{step_name_prefix}{name_only}"
     
             output_dir = self.output_path / step_name
@@ -622,12 +619,12 @@ class TreblPipeline:
         RT_seq_files,
         RT_bc_objects,
         reverse_complement,
-        step1_map_name,
+        step1_map_name=None,
         AD_umi_object=None,
         RT_umi_object=None,
         reads_threshold_AD=1,
         reads_threshold_RT=1,
-        step_name_prefix="trebl_experiment_",
+        step_name_suffix="",
     ):
         """
         Run TREBL experiment analysis for both AD and RT libraries.
@@ -652,8 +649,8 @@ class TreblPipeline:
                 to be retained. Defaults to 1.
             reads_threshold_RT (int, optional): Minimum reads per RT barcode
                 to be retained. Defaults to 1.
-            step_name_prefix (str, optional): Prefix for DuckDB tables and
-                output naming. Defaults to "trebl_experiment_".
+            step_name_suffix (str, optional): Suffix for DuckDB tables and
+                output naming after "trebl_experiment_".
 
         Returns:
             dict: Dictionary containing the final merged results for AD and RT.
@@ -671,6 +668,8 @@ class TreblPipeline:
                 "{output_path}/RT_trebl_experiment_results.csv".
             - The method also generates barcode quality/loss plots/
         """
+        
+        step_name_prefix = "trebl_experiment_" + step_name_suffix
         
         experiments = {
             "AD": {
@@ -707,7 +706,7 @@ class TreblPipeline:
                 count_col_name=spec.get("count_col_name"),
                 gene_col_name=spec.get("gene_col_name"),
                 concat_gene=spec.get("concat_gene", False),
-                step_name_prefix=step_name_prefix
+                step_name_suffix=step_name_suffix
             )
     
             if self.output_path:
@@ -715,20 +714,20 @@ class TreblPipeline:
     
             results[f"{name}_results"] = df
 
-        if step1_map_file_path:            
-            plot_trebl_experiment_loss(
+        if step1_map_name:            
+            self.plot_trebl_experiment_loss(
                 AD_bc_objects, 
                 step1_map_name, 
                 step_name_prefix=step_name_prefix)
     
-            plot_trebl_experiment_loss(
+            self.plot_trebl_experiment_loss(
                 RT_bc_objects, 
                 step1_map_name, 
                 step_name_prefix=step_name_prefix)
         
         return results
 
-    def plot_trebl_experiment_loss(self, bc_objects, step1_map_name, step_name_prefix="trebl_experiment_"):
+    def plot_trebl_experiment_loss(self, bc_objects, step1_map_name=None, step_name_prefix="trebl_experiment_"):
         """
         Plot barcode quality and mapping loss for a TREBL experiment.
 
@@ -799,13 +798,16 @@ class TreblPipeline:
     
             # Count rows present in Step1 map for all BCs
             join_conditions = " AND ".join([f'm."{bc.name}" = s."{bc.name}"' for bc in bc_objects])
-            
-            step1_count = con.execute(f'''
-                SELECT COUNT(*) 
-                FROM "{file_name}" AS m
-                JOIN "{step1_map_name}" AS s
-                ON {join_conditions}
-            ''').fetchone()[0]
+
+            if step1_map_name== None:
+                step1_count = 0
+            else:
+                step1_count = con.execute(f'''
+                    SELECT COUNT(*) 
+                    FROM "{file_name}" AS m
+                    JOIN "{step1_map_name}" AS s
+                    ON {join_conditions}
+                ''').fetchone()[0]
         
             # Prepare DataFrame for plotting
             plot_counts = pd.DataFrame({

@@ -117,46 +117,58 @@ class InitialMapper:
                                - length (int)
         """
         con = self.con
-    
-        # Case 1: no preceder AND no post → take last N bases
-        if seq_obj.preceder == "" and seq_obj.post == "":
-            print(f"{seq_obj.name}: extracting last {seq_obj.length} bases")
-    
+
+        col = seq_obj.name
+        length = seq_obj.length
+        con.execute(f"ALTER TABLE seq ADD COLUMN {col} VARCHAR;")
+
+        if seq_obj.preceder and seq_obj.post:
+            # Both exist → regex between preceder and post
+            regex = f"{seq_obj.preceder}(.*?){seq_obj.post}"  # non-greedy
+            print(f"{col}: extracting between '{seq_obj.preceder}' and '{seq_obj.post}'")
             con.execute(f"""
-                ALTER TABLE seq ADD COLUMN {seq_obj.name} TEXT;
-    
                 UPDATE seq
-                SET {seq_obj.name} = CASE
-                    WHEN length(sequence) >= {seq_obj.length}
-                    THEN substr(sequence, length(sequence) - {seq_obj.length} + 1, {seq_obj.length})
-                    ELSE ''
-                END;
+                SET {col} = coalesce(regexp_extract(sequence::VARCHAR, '{regex}', 1), '')
             """)
     
-        # Case 2: both preceder and post exist → regex extraction
-        else:
-            regex = f"{seq_obj.preceder}(.*){seq_obj.post}"
-            print(f"Regex for {seq_obj.name}: {regex}")
-    
+        elif not seq_obj.preceder and not seq_obj.post:
+            # Neither exists → take last N bases
+            print(f"{col}: extracting last {length} bases")
             con.execute(f"""
-                ALTER TABLE seq ADD COLUMN {seq_obj.name} TEXT;
-    
                 UPDATE seq
-                SET {seq_obj.name} = coalesce(
-                    regexp_extract(sequence::VARCHAR, '{regex}', 1),
-                    ''
-                );
+                SET {col} = CASE
+                    WHEN length(sequence) >= {length}
+                    THEN substr(sequence, length(sequence) - {length} + 1, {length})
+                    ELSE ''
+                END
+            """)
+    
+        elif seq_obj.preceder:
+            # Only preceder → take N bases after preceder
+            regex = f"{seq_obj.preceder}(.{{{length}}})"
+            print(f"{col}: extracting {length} bases after preceder '{seq_obj.preceder}'")
+            con.execute(f"""
+                UPDATE seq
+                SET {col} = coalesce(regexp_extract(sequence::VARCHAR, '{regex}', 1), '')
+            """)
+    
+        elif seq_obj.post:
+            # Only post → take N bases before post
+            regex = f"(.{{{length}}}){seq_obj.post}"
+            print(f"{col}: extracting {length} bases before post '{seq_obj.post}'")
+            con.execute(f"""
+                UPDATE seq
+                SET {col} = coalesce(regexp_extract(sequence::VARCHAR, '{regex}', 1), '')
             """)
     
         # Add quality flag column
-        qual_col = f"{seq_obj.name}_qual"
+        qual_col = f"{col}_qual"
         con.execute(f"ALTER TABLE seq ADD COLUMN {qual_col} BOOLEAN;")
-    
         con.execute(f"""
             UPDATE seq
-            SET {qual_col} = LENGTH({seq_obj.name}) = {seq_obj.length};
+            SET {qual_col} = LENGTH({col}) = {length};
         """)
-    
+        
     @time_it
     def extract_barcodes(self):
         """Extract all barcode columns and compute their quality flags"""

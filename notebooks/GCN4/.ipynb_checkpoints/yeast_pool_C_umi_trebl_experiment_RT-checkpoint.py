@@ -16,6 +16,8 @@ print("Done with imports", flush=True)
 
 # Input and output paths
 yeast_pool_C_umi_RT_seq_files = glob.glob("/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/data/GCN4_pool_C_UMI_RPTR_fastp/*fastq*")
+#yeast_pool_C_umi_RT_seq_files = ["global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/data/GCN4_pool_C_UMI_RPTR_fastp/RPTR_3_30_S19_R1_001_fastp.fastq.gz"]
+
 yeast_pool_C_umi_output_path = "/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4/yeast_pool_C_umi" 
 print(f"Output path: {yeast_pool_C_umi_output_path}", flush=True)
 print(f"Found {len(yeast_pool_C_umi_RT_seq_files)} RT files", flush=True)
@@ -57,8 +59,8 @@ for file_path in yeast_pool_C_umi_RT_seq_files:
     refiner = map_refiner.MapRefiner(db_path = db_path,
                                         bc_objects=[EC_RPTR_BC],
                                         column_pairs = [],
-                                        #map_order = ['quality'],
-                                         map_order = ['grouped'],
+                                        map_order = ['quality'],
+                                         # map_order = ['grouped'],
                                         step_name=f"trebl_experiment_yeast_pool_C_umi_{name_only}", 
                                         descriptor = "",
                                         output_figures_path='/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4/yeast_pool_C_umi/figures',
@@ -67,18 +69,18 @@ for file_path in yeast_pool_C_umi_RT_seq_files:
     refiner.refine_map_from_db(should_check_exists=True)
     refiner.plot_loss()
 
-    # # Run both deduplications
-    # deduplicator = umi_deduplicate.UMIDeduplicator(db_path = db_path,
-    #                                                     bc_objects = [EC_RPTR_BC],
-    #                                                     step_name = f"trebl_experiment_yeast_pool_C_umi_{name_only}", 
-    #                                                     descriptor = "",
-    #                                                     step1_map_name = None,
-    #                                                     fastq_path = file_path,
-    #                                                     output_path = umi_path, 
-    #                                                    refined_map_suffix = 'quality')
+    # Run both deduplications
+    deduplicator = umi_deduplicate.UMIDeduplicator(db_path = db_path,
+                                                        bc_objects = [EC_RPTR_BC],
+                                                        step_name = f"trebl_experiment_yeast_pool_C_umi_{name_only}", 
+                                                        descriptor = "",
+                                                        step1_map_name = None,
+                                                        fastq_path = file_path,
+                                                        output_path = umi_path, 
+                                                       refined_map_suffix = 'quality')
 
-    # #deduplicator.run_both_deduplications()
-    # deduplicator.run_simple_deduplication()
-    # deduplicator.save_simple_deduplication()
+    #deduplicator.run_both_deduplications()
+    deduplicator.run_simple_deduplication()
+    deduplicator.save_simple_deduplication()
 
 

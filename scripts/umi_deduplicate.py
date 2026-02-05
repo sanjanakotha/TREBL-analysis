@@ -54,7 +54,7 @@ class UMIDeduplicator:
  
     def counts_per_umi(self):
         """
-        Returns a DataFrame with counts of each UMI per barcode combination.
+        Returns a DataFrame with simple counts of each UMI per barcode combination.
         Uses the quality_designed table in DuckDB.
         """
         select_cols_sql = ", ".join(self.cols)  # e.g., "ADBC2, HawkBCs"
@@ -149,7 +149,11 @@ class UMIDeduplicator:
             counts_per_bc = os.path.join(output_dir, f"{self.base}")
             merged_df.to_csv(f"{counts_per_bc}_simple_umi_counts.tsv", index=False, sep = "\t")
             print(f"Saved to {counts_per_bc}_simple_umi_counts.tsv")
-            
+
+            counts_per_umi_df = self.counts_per_umi()
+            counts_per_umi_df.to_csv(f"{counts_per_bc}_reads_per_umi.tsv", index=False, sep = "\t")
+            print(f"Saved to {counts_per_bc}_reads_per_umi.tsv")            
+                        
         return merged_df
 
     def run_simple_deduplication(self):
@@ -284,6 +288,8 @@ class UMIDeduplicator:
         
         # Create the bash script
         script_path = os.path.join(output_dir, f"{self.base}_umi_pipeline.sh")
+
+        bc_len = sum([_.length for _ in self.bc_objects])
         
         with open(script_path, "w") as f:
             f.write(f"""#!/bin/bash
@@ -292,8 +298,9 @@ class UMIDeduplicator:
     module load bio/samtools/1.17-gcc-11.4.0
     
     echo "Aligning .FASTQ to reference .FA ..."
-    bowtie2 -p 32 -x {self.bowtie2_index_prefix} -U {self.umi_fastq} -S {sam_file} --norc --no-unal --end-to-end -N 0 -L 12 -k 1 --very-fast
     
+    bowtie2 -p 32 -x {self.bowtie2_index_prefix} -U {self.umi_fastq} -S {sam_file} --norc --end-to-end --very-sensitive -N 0 -L {bc_len} -k 1 --score-min L,0,0
+  
     echo "Converting SAM -> BAM ..."
     samtools view -b {sam_file} > {bam_file}
     
@@ -400,7 +407,6 @@ class UMIDeduplicator:
             # Need to save the simple deduplication result
             
 
-# Need to test
 def run_fastp(input_dir, output_dir, script_path="../savio_jobs/fastp.sh"):
     """
     Run fastp on all .fastq.gz files in input_dir. Outputs as .fastq files.
