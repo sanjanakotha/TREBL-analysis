@@ -362,7 +362,7 @@ class TreblPipeline:
         reverse_complement,
         reads_threshold_AD,
         reads_threshold_RT,
-        step1_map_name,
+        step1_map_csv_path,  # Updated argument to accept CSV path
         step_suffix="",
     ):
         """
@@ -379,7 +379,7 @@ class TreblPipeline:
             reverse_complement (bool): Whether to reverse complement reads.
             reads_threshold_AD (int): Minimum reads per AD barcode.
             reads_threshold_RT (int): Minimum reads per RT barcode.
-            step1_map_name (str): Name of the Step 1 DuckDB table.
+            step1_map_csv_path (str): Path to the Step 1 map CSV file.
             step_suffix (str, optional): Suffix appended to the step name.
 
         Returns:
@@ -389,7 +389,7 @@ class TreblPipeline:
                 - "step1_overlap": Overlap statistics
         """
         step_name = "step2" + step_suffix
-        
+
         # --- Initial mapping ---
         self._run_initial_mappers([
             {
@@ -407,15 +407,15 @@ class TreblPipeline:
                 "design_file_path": None,  # RT skips design
             },
         ])
-    
+
         refiners = []
-        
+
         for bc_objs, reads_threshold in zip(
             (AD_bc_objects, RT_bc_objects),
             (reads_threshold_AD, reads_threshold_RT)
         ):
             step2_map_order = MAP_ORDERS["step2"][self.error_correction].copy()
-            
+
             refiners.append(
                 map_refiner.MapRefiner(
                     db_path=self.db_path,
@@ -428,38 +428,45 @@ class TreblPipeline:
                     output_figures_path=self.output_figures_path,
                 )
             )
-            
+
         # --- Run refiners ---
         refiners = self._run_refiners(
             refiners,
             plot_titles=["AD Step 2", "RT Step 2"],
         )
-    
+
+        # --- Load Step 1 map CSV into DuckDB ---
+        step1_map_name = "step1_map_temp"
+        self.con.execute(f"DROP TABLE IF EXISTS {step1_map_name}")
+        self.con.execute(f"""
+            CREATE TABLE {step1_map_name} AS
+            SELECT * FROM read_csv_auto('{step1_map_csv_path}')
+        """)
+
         # --- Compute AD–reporter complexity and overlap ---
         checker = complexity.ComplexityChecker(
             db_path=self.db_path,
             step_name=step_name,
-            step1_map_name=step1_map_name,
+            step1_map_name=step1_map_name,  # Use the temporary table name
             step_suffix="designed",
             barcode_groups=[AD_bc_objects, RT_bc_objects],
         )
-    
+
         overlap = checker.count_overlap()
-    
+
         AD_df = refiners[0].get_map_df('designed')
         RT_df = refiners[1].get_map_df('designed')
-    
+
         # --- Save CSVs ---
         if self.output_path:
             AD_df.to_csv(self.output_path / f"{step_name}_AD.csv", index=False)
             RT_df.to_csv(self.output_path / f"{step_name}_RT.csv", index=False)
-    
+
         return {
             "AD_step2": AD_df,
             "RT_step2": RT_df,
             "step1_overlap": overlap
         }
-
     
     def _duckdb_safe_name(self, base_name):
         name = base_name.replace("-", "_").replace(" ", "_")
@@ -619,7 +626,7 @@ class TreblPipeline:
         RT_seq_files,
         RT_bc_objects,
         reverse_complement,
-        step1_map_name=None,
+        step1_map_csv_path=None,  # Updated argument to accept CSV path
         AD_umi_object=None,
         RT_umi_object=None,
         reads_threshold_AD=1,
@@ -639,7 +646,7 @@ class TreblPipeline:
             RT_bc_objects (list): Barcode objects for reporter library extraction.
             reverse_complement (bool): Whether reads should be reverse complemented
                 prior to barcode extraction.
-            step1_map_name (str): DuckDB table name from Step 1 mapping used to
+            step1_map_csv_path (str): Path to the Step 1 map CSV file used to
                 compute overlap.
             AD_umi_object (optional): UMI object for AD library. If provided,
                 UMI deduplication is performed.
@@ -662,11 +669,11 @@ class TreblPipeline:
 
         Notes:
             - If UMI objects are provided, UMI-based deduplication is applied
-              and both "complex" and "simple" UMI count tables are merged.
+            and both "complex" and "simple" UMI count tables are merged.
             - If `output_path` is set, results are saved as CSV files:
                 "{output_path}/AD_trebl_experiment_results.csv" and
                 "{output_path}/RT_trebl_experiment_results.csv".
-            - The method also generates barcode quality/loss plots/
+            - The method also generates barcode quality/loss plots.
         """
         
         step_name_prefix = "trebl_experiment_" + step_name_suffix
@@ -693,9 +700,9 @@ class TreblPipeline:
                 "output_file": "RTBC_trebl_experiment_results.csv",
             },
         }
-    
+
         results = {}
-    
+
         for name, spec in experiments.items():
             df = self._run_trebl_experiment_helper(
                 seq_files=spec["seq_files"],
@@ -708,22 +715,32 @@ class TreblPipeline:
                 concat_gene=spec.get("concat_gene", False),
                 step_name_suffix=step_name_suffix
             )
-    
+
             if self.output_path:
                 df.to_csv(self.output_path / f"{name}_trebl_experiment_results.csv", index=False)
-    
+
             results[f"{name}_results"] = df
 
-        if step1_map_name:            
+        if step1_map_csv_path:
+            # Load Step 1 map CSV into DuckDB as a temporary table
+            step1_map_name = "step1_map_temp"
+            self.con.execute(f"DROP TABLE IF EXISTS {step1_map_name}")
+            self.con.execute(f"""
+                CREATE TABLE {step1_map_name} AS
+                SELECT * FROM read_csv_auto('{step1_map_csv_path}')
+            """)
+
+            # Plot loss for AD and RT
             self.plot_trebl_experiment_loss(
                 AD_bc_objects, 
                 step1_map_name, 
-                step_name_prefix=step_name_prefix)
-    
+                step_name_prefix=step_name_prefix
+            )
             self.plot_trebl_experiment_loss(
                 RT_bc_objects, 
                 step1_map_name, 
-                step_name_prefix=step_name_prefix)
+                step_name_prefix=step_name_prefix
+            )
         
         return results
 

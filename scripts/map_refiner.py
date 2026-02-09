@@ -704,20 +704,35 @@ class MapRefiner:
         self.con.execute(f"COPY {self._prefixed(map_name)} TO '{map_path}' WITH (HEADER, DELIMITER ',')")
 
     @time_it
-    def save_loss_table(self, output_csv_path=None):
+    def save_loss_table(self):
         """
-        Generates a table summarizing the counts and losses at each step of the mapping process.
-    
-        Parameters
-        ----------
-        output_csv_path : str or None
-            If provided, saves the resulting DataFrame as a CSV file at this path.
-    
-        Returns
-        -------
-        pd.DataFrame
-            DataFrame summarizing unique counts, unique AD counts, total reads,
-            and percentage losses at each mapping step.
+        Generates and saves a table summarizing the counts and losses at each step of the mapping process.
+        This method creates a summary table that includes unique counts, unique AD counts, total reads, 
+        and percentage losses at each mapping step. The table can be saved as a CSV file and is also 
+        stored in the database for further analysis.
+        Args:
+            None
+        Returns:
+            pd.DataFrame: A DataFrame summarizing the mapping process, including the following columns:
+                - map: The mapping step name.
+                - description: A description of the mapping step.
+                - unique_count: The number of unique entries at this step.
+                - unique_AD_count: The number of unique AD entries at this step.
+                - total_reads: The total number of reads at this step.
+                - % of previous step: The percentage of unique entries compared to the previous step.
+                - % of total reads: The percentage of unique entries compared to the initial step.
+        Raises:
+            None
+        Notes:
+            - The method assumes that the mapping steps and their descriptions are defined in the 
+            `map_info_dict` dictionary.
+            - If a table for a specific mapping step does not exist in the database, the corresponding 
+            counts will be set to `None`.
+            - The resulting DataFrame is saved as a CSV file if `self.output_figures_path` is provided.
+            - The summary table is also saved to the database under the name `loss_summary`.
+        Example:
+            >>> df = self.save_loss_table()
+            >>> print(df.head())
         """
         # Mapping step descriptions
         map_info_dict = {
@@ -786,9 +801,9 @@ class MapRefiner:
         df['% of total reads'] = df['% of total reads'].fillna(100)
     
         # Save CSV if requested
-        if output_csv_path:
+        if self.output_figures_path:
+            output_csv_path = os.path.join(self.output_figures_path, f"{self.table_prefix_with_descriptor}loss_summary.csv")
             df.to_csv(output_csv_path, index=False)
-
         
         # Save summary table to SQL (overwrite if exists)
         loss_table_name = self._prefixed("loss_summary")
