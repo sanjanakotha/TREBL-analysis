@@ -12,4 +12,4 @@
 echo "JOB STARTED on $(hostname) at $(date)"
 
 # Run the Python script
-python -u /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/notebooks/NKX2-2/scripts/trebl_experiment_pipeline_err_corr_100_rim.py
+/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/conda/trebl_env/bin/python /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/notebooks/NKX2-2/scripts/trebl_experiment_pipeline_err_corr_100_rim.py

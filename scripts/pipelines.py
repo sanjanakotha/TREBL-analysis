@@ -10,6 +10,10 @@ import seaborn as sns
 import re
 from tqdm import tqdm
 import re
+import sys  
+import json
+import subprocess
+from pathlib import Path
 
 
 # Defines the sequence of refinement operations for each step.
@@ -390,7 +394,7 @@ class TreblPipeline:
         """
         step_name = "step2" + step_suffix
 
-        # --- Initial mapping ---
+        # Initial mapping
         self._run_initial_mappers([
             {
                 "seq_file": AD_seq_file,
@@ -429,13 +433,13 @@ class TreblPipeline:
                 )
             )
 
-        # --- Run refiners ---
+        # Run refiners
         refiners = self._run_refiners(
             refiners,
             plot_titles=["AD Step 2", "RT Step 2"],
         )
 
-        # --- Load Step 1 map CSV into DuckDB ---
+        # Load Step 1 map CSV into DuckDB
         step1_map_name = "step1_map_temp"
         self.con.execute(f"DROP TABLE IF EXISTS {step1_map_name}")
         self.con.execute(f"""
@@ -443,7 +447,7 @@ class TreblPipeline:
             SELECT * FROM read_csv_auto('{step1_map_csv_path}')
         """)
 
-        # --- Compute AD–reporter complexity and overlap ---
+        # Compute AD–reporter complexity and overlap
         checker = complexity.ComplexityChecker(
             db_path=self.db_path,
             step_name=step_name,
@@ -457,7 +461,7 @@ class TreblPipeline:
         AD_df = refiners[0].get_map_df('designed')
         RT_df = refiners[1].get_map_df('designed')
 
-        # --- Save CSVs ---
+        # Save CSVs
         if self.output_path:
             AD_df.to_csv(self.output_path / f"{step_name}_AD.csv", index=False)
             RT_df.to_csv(self.output_path / f"{step_name}_RT.csv", index=False)
@@ -469,6 +473,19 @@ class TreblPipeline:
         }
     
     def _duckdb_safe_name(self, base_name):
+        """
+        Convert a filename to a DuckDB-safe table name.
+        
+        Replaces periods, hyphens, and spaces with underscores, removes special
+        characters, and ensures the name doesn't start with a digit.
+        
+        Args:
+            base_name (str): Original filename or identifier.
+            
+        Returns:
+            str: DuckDB-safe table name.
+        """
+        name = base_name.replace(".", "_")    # replace periods with underscores
         name = base_name.replace("-", "_").replace(" ", "_")
         name = re.sub(r'[^0-9a-zA-Z_]', '_', name)
         if re.match(r'^\d', name):
@@ -487,27 +504,41 @@ class TreblPipeline:
         count_col_name=None,
         gene_col_name=None,
         concat_gene=False,
+        umi_deduplication='both'
     ):
         """
         Core TREBL experiment runner.
 
-        Automatically selects UMI or non-UMI workflows based on whether
-        a UMI object is provided.
+        Handles both UMI and non-UMI workflows. If a UMI object is provided,
+        UMI-based deduplication is applied. The workflow supports two deduplication
+        modes: 'simple' (single-step deduplication) or 'both' (simple + directional/complex deduplication).
 
         Args:
-            seq_files (list[str]): FASTQ file paths.
-            bc_objects (list): Barcode objects.
-            reverse_complement (bool): Whether to reverse complement reads.
-            reads_threshold (int, optional): Minimum reads threshold.
-            umi_object (optional): UMI configuration object.
-            step_name_suffix (str, optional): Suffix appended to step names.
-            count_col_name (str, optional): Column name for UMI counts.
-            gene_col_name (str, optional): Column name for gene identifiers.
-            concat_gene (bool, optional): Whether to concatenate barcode
-                columns to form a gene identifier.
+            seq_files (list[str]): FASTQ file paths to process.
+            bc_objects (list): Barcode objects describing library barcodes.
+            reverse_complement (bool): Whether to reverse complement reads before processing.
+            reads_threshold (int, optional): Minimum reads per barcode/UMI to retain. Defaults to 1.
+            umi_object (optional): UMI configuration object. If provided, triggers UMI-based workflow.
+            step_name_suffix (str, optional): Suffix appended to DuckDB step names. Defaults to "".
+            count_col_name (str, optional): Column name for UMI counts in final merged results.
+            gene_col_name (str, optional): Column name for gene/barcode identifiers.
+            concat_gene (bool, optional): If True, concatenates barcode columns to form gene identifiers. Defaults to False.
+            umi_deduplication (str, optional): Deduplication mode. Options:
+                - 'simple': Only simple UMI deduplication.
+                - 'both' (default): Runs both simple and directional/complex deduplication.
 
         Returns:
             pd.DataFrame: Aggregated experiment results.
+                - If UMI workflow: Merged DataFrame containing both "simple" and "complex" UMI counts.
+                - If non-UMI workflow: Barcode-level counts for the experiment.
+
+        Notes:
+            - When `umi_object` is provided, directional/complex UMI counts are stored in 
+            "{output_path}/{sample}_directional_umi_counts.tsv" and simple UMI counts in 
+            "{output_path}/{sample}_simple_umi_counts.tsv".
+            - Deduplicator also outputs reads-per-UMI summary files for quality control.
+            - Non-UMI workflow skips UMI deduplication and uses barcode grouping and thresholding.
+            - Error correction steps (if enabled) are applied before deduplication.
         """
         
         step_name_prefix = "trebl_experiment_" + step_name_suffix
@@ -526,7 +557,7 @@ class TreblPipeline:
     
             design_file_path = self.design_file_path if "AD" in [bc.name for bc in bc_objects] else None
     
-            # --- Initial mapping ---
+            # Initial mapping
             mapper_kwargs = dict(
                 db_path=self.db_path,
                 step_name=step_name,
@@ -541,7 +572,7 @@ class TreblPipeline:
             mapper = initial_map.InitialMapper(**mapper_kwargs)
             mapper.create_map()
     
-            # --- Refinement ---
+            # Refinement
             manual_ec_threshold = not (self.error_correction and reads_threshold == 1)
             map_order = ["quality", "error_corrected"] if self.error_correction else ["quality"]
             if not umi_object:
@@ -564,7 +595,7 @@ class TreblPipeline:
                 refiner.plot_error_correction()
     
             if umi_object:
-                # --- Deduplication ---
+                # Deduplication
                 refined_map_suffix = "error_corrected" if self.error_correction else "quality"
                 deduplicator = umi_deduplicate.UMIDeduplicator(
                     db_path=self.db_path,
@@ -576,14 +607,20 @@ class TreblPipeline:
                     output_path=output_dir,
                     refined_map_suffix=refined_map_suffix,
                 )
-                deduplicator.run_both_deduplications()
-    
-                # --- Load results ---
-                complex_df = pd.read_csv(output_dir / f"{name_only}_directional_umi_counts.tsv", sep="\t")
+                
+                if umi_deduplication == 'simple':
+                    deduplicator.run_simple_deduplication()
+                    deduplicator.save_simple_deduplication()
+                else:
+                    deduplicator.run_both_deduplications()
+
+                    # Load results
+                    complex_df = pd.read_csv(output_dir / f"{name_only}_directional_umi_counts.tsv", sep="\t")
+                    complex_df["name"] = name_only
+                    results.append(complex_df)
+
                 simple_df = pd.read_csv(output_dir / f"{name_only}_simple_umi_counts.tsv", sep="\t")
-                complex_df["name"] = name_only
                 simple_df["name"] = name_only
-                results.append(complex_df)
                 simple_results.append(simple_df)
 
                 # Reads per UMI
@@ -591,24 +628,45 @@ class TreblPipeline:
                 one_file_reads_per_UMI["name"] = name_only
                 one_file_reads_per_UMI.to_csv(output_dir / f"{name_only}_reads_per_umi.tsv", sep="\t")
 
-        # --- Merge results ---
+        # Merge results
         if umi_object:
-            complex_df = pd.concat(results, ignore_index=True).rename(columns={"count": count_col_name, "gene": gene_col_name})
-            simple_df = pd.concat(simple_results, ignore_index=True).rename(columns={"count": count_col_name})
-    
+            # Merge results safely for both simple and complex dedup
+            
+            # Complex DF may be empty if only simple dedup was run
+            if results:
+                complex_df = pd.concat(results, ignore_index=True).rename(
+                    columns={"count": count_col_name, "gene": gene_col_name}
+                )
+            else:
+                complex_df = pd.DataFrame(columns=[gene_col_name, count_col_name, "name"])
+            
+            # Simple DF should always exist
+            simple_df = pd.concat(simple_results, ignore_index=True).rename(
+                columns={"count": count_col_name}
+            )
+            
+            # Concatenate barcode columns if requested
             if concat_gene:
                 concat_cols = [bc.name for bc in bc_objects]
                 simple_df[gene_col_name] = simple_df[concat_cols].agg("".join, axis=1)
-    
-            merged = pd.merge(
-                complex_df,
-                simple_df,
-                on=[gene_col_name, "name"],
-                suffixes=("_complex", "_simple"),
-            )
+            
+            # Merge simple and complex DFs
+            if not complex_df.empty:
+                merged = pd.merge(
+                    complex_df,
+                    simple_df,
+                    on=[gene_col_name, "name"],
+                    suffixes=("_complex", "_simple"),
+                    how="outer"
+                )
+            else:
+                # If no complex DF, just return simple_df with renamed columns
+                merged = simple_df.copy()
+                merged = merged.rename(columns={count_col_name: f"{count_col_name}_simple"})
+            
             return merged
         else:
-             # --- Non-UMI workflow: grab all relevant tables ---
+             # Non-UMI workflow: grab all relevant tables
             tables = refiner.show_tables()
             first_bc_name = bc_objects[0].name
             for table in tables:
@@ -626,54 +684,51 @@ class TreblPipeline:
         RT_seq_files,
         RT_bc_objects,
         reverse_complement,
-        step1_map_csv_path=None,  # Updated argument to accept CSV path
+        step1_map_csv_path=None,
         AD_umi_object=None,
         RT_umi_object=None,
         reads_threshold_AD=1,
         reads_threshold_RT=1,
         step_name_suffix="",
+        umi_deduplication='both'
     ):
         """
         Run TREBL experiment analysis for both AD and RT libraries.
 
         The workflow automatically selects between a UMI or non-UMI
-        pipeline depending on whether a UMI object is provided.
+        pipeline depending on whether a UMI object is provided. If UMI deduplication
+        is enabled, results from simple and/or directional/complex deduplication are merged.
 
         Args:
-            AD_seq_files (list[str]): Paths to FASTQ files containing AD reads.
+            AD_seq_files (list[str]): Paths to FASTQ files for AD library reads.
             AD_bc_objects (list): Barcode objects for AD library extraction.
-            RT_seq_files (list[str]): Paths to FASTQ files containing reporter reads.
+            RT_seq_files (list[str]): Paths to FASTQ files for reporter (RT) reads.
             RT_bc_objects (list): Barcode objects for reporter library extraction.
-            reverse_complement (bool): Whether reads should be reverse complemented
-                prior to barcode extraction.
-            step1_map_csv_path (str): Path to the Step 1 map CSV file used to
-                compute overlap.
-            AD_umi_object (optional): UMI object for AD library. If provided,
-                UMI deduplication is performed.
-            RT_umi_object (optional): UMI object for RT library. If provided,
-                UMI deduplication is performed.
-            reads_threshold_AD (int, optional): Minimum reads per AD barcode
-                to be retained. Defaults to 1.
-            reads_threshold_RT (int, optional): Minimum reads per RT barcode
-                to be retained. Defaults to 1.
-            step_name_suffix (str, optional): Suffix for DuckDB tables and
-                output naming after "trebl_experiment_".
+            reverse_complement (bool): Whether reads should be reverse complemented prior to barcode extraction.
+            step1_map_csv_path (str, optional): Path to Step 1 map CSV for computing overlap plots.
+            AD_umi_object (optional): UMI object for AD library. If provided, triggers UMI deduplication.
+            RT_umi_object (optional): UMI object for RT library. If provided, triggers UMI deduplication.
+            reads_threshold_AD (int, optional): Minimum reads per AD barcode to retain. Defaults to 1.
+            reads_threshold_RT (int, optional): Minimum reads per RT barcode to retain. Defaults to 1.
+            step_name_suffix (str, optional): Suffix for DuckDB table and output names.
+            umi_deduplication (str, optional): Deduplication mode for both AD and RT libraries.
+                Options:
+                    - 'simple': Only simple UMI deduplication is applied.
+                    - 'both' (default): Both simple and directional/complex deduplication are performed.
 
         Returns:
-            dict: Dictionary containing the final merged results for AD and RT.
-                Keys:
-                    - "AD_results" (pd.DataFrame): TREBL experiment results for AD
-                        library, with barcodes and reads or unique UMI counts. 
-                    - "RT_results" (pd.DataFrame): TREBL experiment results for reporter
-                        library, with barcodes and reads or unique UMI counts. 
+            dict: Dictionary containing final TREBL experiment results:
+                - "AD_results" (pd.DataFrame): AD library results with merged UMI counts if UMI workflow.
+                - "RT_results" (pd.DataFrame): RT library results with merged UMI counts if UMI workflow.
 
         Notes:
-            - If UMI objects are provided, UMI-based deduplication is applied
-            and both "complex" and "simple" UMI count tables are merged.
-            - If `output_path` is set, results are saved as CSV files:
+            - UMI-based workflows produce two count tables per sample: 
+            simple UMI counts and directional/complex UMI counts. These are merged in the final output.
+            - Non-UMI workflows return barcode counts after grouping, thresholding, and optional error correction.
+            - If `output_path` is set, results are saved as CSV:
                 "{output_path}/AD_trebl_experiment_results.csv" and
                 "{output_path}/RT_trebl_experiment_results.csv".
-            - The method also generates barcode quality/loss plots.
+            - Barcode quality/loss plots are generated for both AD and RT libraries.
         """
         
         step_name_prefix = "trebl_experiment_" + step_name_suffix
@@ -688,6 +743,7 @@ class TreblPipeline:
                 "gene_col_name": "AD_ADBC_concat",
                 "concat_gene": True,
                 "output_file": "ADBC_trebl_experiment_results.csv",
+                "umi_deduplication" : umi_deduplication
             },
             "RT": {
                 "seq_files": RT_seq_files,
@@ -698,6 +754,7 @@ class TreblPipeline:
                 "gene_col_name": "RTBC",
                 "concat_gene": False,
                 "output_file": "RTBC_trebl_experiment_results.csv",
+                "umi_deduplication": umi_deduplication
             },
         }
 
@@ -713,7 +770,8 @@ class TreblPipeline:
                 count_col_name=spec.get("count_col_name"),
                 gene_col_name=spec.get("gene_col_name"),
                 concat_gene=spec.get("concat_gene", False),
-                step_name_suffix=step_name_suffix
+                step_name_suffix=step_name_suffix,
+                umi_deduplication=spec["umi_deduplication"]
             )
 
             if self.output_path:
@@ -862,4 +920,180 @@ class TreblPipeline:
     
         return fig, axes
 
+    def calculate_activity_scores(
+        self,
+        step1_path,
+        AD_bc_objects,
+        RT_bc_objects,
+        time_regex,
+        rep_regex
+    ):
+        """
+        Calculate activity scores from AD and RT experiment results using a Step 1
+        barcode-to-AD mapping file.
 
+        This function calculates two types of activity scores:
+
+        1. Averaged Activity:
+            Activity is calculated per barcode as:
+                activity = RT UMIs / AD UMIs
+            The mean and standard deviation of activity are computed for each
+            (AD, time, rep) and pivoted to (AD, rep) × time.
+
+        2. Summed Activity:
+            AD UMIs and RT UMIs are summed across barcodes for each
+            (AD, time, rep), and activity is calculated as:
+                activity = sum(RT UMIs) / sum(AD UMIs)
+            The resulting activity is returned **only in pivoted form**.
+
+        Parameters
+       -------
+        step1_path : str
+            Path to the Step 1 mapping CSV file.
+        AD_bc_objects : list
+            List of AD barcode objects with a `.name` attribute.
+        RT_bc_objects : list
+            List of RT barcode objects with a `.name` attribute.
+        time_regex : str
+            Regex to extract the `time` value from the `name` column.
+        rep_regex : str
+            Regex to extract the `rep` (replicate) value from the `name` column.
+
+        Returns
+       ----
+        tuple
+            A tuple containing:
+            - pivoted_mean : pd.DataFrame
+                Mean activity averaged across barcodes
+                (index = AD, rep; columns = time).
+            - pivoted_summed_activity : pd.DataFrame
+                Activity calculated from summed UMIs across barcodes
+                (index = AD, rep; columns = time).
+
+        Output Files
+       ---------
+        If `self.output_path` is set, the following files are written:
+            - unaggregated_activities.csv
+            - activity_mean.csv
+            - activity_std.csv
+            - activity_summed_pivoted.csv
+        """
+
+        import sys
+        import pandas as pd
+
+        def extract_with_regex(series, regex, group=1, column_name=""):
+            """Extract integer values using regex with validation."""
+            try:
+                extracted = series.str.extract(regex).iloc[:, group - 1]
+                if extracted.isnull().any():
+                    raise ValueError(
+                        f"Regex failed to match all values in column '{column_name}'."
+                    )
+                return extracted.astype(int)
+            except Exception:
+                print(f"Error extracting '{column_name}' with regex '{regex}'.")
+                print(series.head(10))
+                sys.exit(1)
+
+        # Load experiment results
+        ad_results_path = self.output_path / "AD_trebl_experiment_results.csv"
+        rt_results_path = self.output_path / "RT_trebl_experiment_results.csv"
+
+        ad_column_names = [bc.name for bc in AD_bc_objects]
+        rt_column_names = [bc.name for bc in RT_bc_objects]
+
+        ad_bc_results = pd.read_csv(ad_results_path, index_col=0)
+        ad_bc_results["time"] = extract_with_regex(
+            ad_bc_results["name"], time_regex, column_name="time"
+        )
+        ad_bc_results["rep"] = extract_with_regex(
+            ad_bc_results["name"], rep_regex, column_name="rep"
+        )
+        ad_bc_results = ad_bc_results[
+            ad_column_names + ["time", "rep", "AD_umi_count_simple"]
+        ].reset_index(drop=True)
+
+        rt_bc_results = pd.read_csv(rt_results_path)
+        rt_bc_results["time"] = extract_with_regex(
+            rt_bc_results["name"], time_regex, column_name="time"
+        )
+        rt_bc_results["rep"] = extract_with_regex(
+            rt_bc_results["name"], rep_regex, column_name="rep"
+        )
+        rt_bc_results = rt_bc_results[
+            rt_column_names + ["time", "rep", "RTBC_umi_count_simple"]
+        ].reset_index(drop=True)
+
+        # Load Step 1 mapping
+        step1_map = pd.read_csv(step1_path)
+        step1_map = step1_map[ad_column_names + rt_column_names + ["AD"]]
+
+        step1_map_with_ad = pd.merge(step1_map, ad_bc_results)
+        step1_map_with_rt = pd.merge(step1_map, rt_bc_results)
+        step1_map_with_ad_rt = pd.merge(
+            step1_map_with_ad, step1_map_with_rt, how="outer"
+        )
+
+        step1_map_with_ad_rt["AD_umi_count_simple"] = (
+            step1_map_with_ad_rt["AD_umi_count_simple"].fillna(0)
+        )
+        step1_map_with_ad_rt["RTBC_umi_count_simple"] = (
+            step1_map_with_ad_rt["RTBC_umi_count_simple"].fillna(0)
+        )
+
+        # Per-barcode activity
+        step1_map_with_ad_rt["activity"] = (
+            step1_map_with_ad_rt["RTBC_umi_count_simple"]
+            / step1_map_with_ad_rt["AD_umi_count_simple"]
+        )
+
+        if self.output_path:
+            step1_map_with_ad_rt.to_csv(
+                self.output_path / "unaggregated_activities.csv", index=False
+            )
+
+        # Averaged activity across barcodes
+        grouped = (
+            step1_map_with_ad_rt
+            .groupby(["AD", "time", "rep"])["activity"]
+            .agg(["mean", "std"])
+            .reset_index()
+        )
+
+        pivoted_mean = grouped.pivot(
+            index=["AD", "rep"], columns="time", values="mean"
+        )
+        pivoted_std = grouped.pivot(
+            index=["AD", "rep"], columns="time", values="std"
+        )
+
+        if self.output_path:
+            pivoted_mean.to_csv(self.output_path / "activity_mean.csv")
+            pivoted_std.to_csv(self.output_path / "activity_std.csv")
+
+        # Summed activity across barcodes (pivoted only)
+        summed = (
+            step1_map_with_ad_rt
+            .groupby(["AD", "time", "rep"])
+            .agg(
+                summed_AD_UMIs=("AD_umi_count_simple", "sum"),
+                summed_RT_UMIs=("RTBC_umi_count_simple", "sum"),
+            )
+            .reset_index()
+        )
+
+        summed["activity"] = (
+            summed["summed_RT_UMIs"] / summed["summed_AD_UMIs"]
+        )
+
+        pivoted_summed_activity = summed.pivot(
+            index=["AD", "rep"], columns="time", values="activity"
+        )
+
+        if self.output_path:
+            pivoted_summed_activity.to_csv(
+                self.output_path / "activity_summed.csv"
+            )
+
+        return pivoted_mean, pivoted_summed_activity

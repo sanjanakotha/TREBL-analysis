@@ -9,15 +9,14 @@
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=sanjana.kotha@berkeley.edu
 #SBATCH --array=0
-#SBATCH --reservation=maint 
 
 # -------------------------
 # Load conda and environment
 # -------------------------
-module load anaconda3/2024.02-1-11.4
-source $(conda info --base)/etc/profile.d/conda.sh  # initialize conda
-conda activate /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/conda/trebl_env
-set -e  # stop the job if any command fails
+# module load anaconda3/2024.02-1-11.4
+# source $(conda info --base)/etc/profile.d/conda.sh  # initialize conda
+# conda activate /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/conda/trebl_env
+# set -e  # stop the job if any command fails
 
 # -------------------------
 # Create array of FASTQ files
@@ -59,4 +58,4 @@ echo "Mode: $MODE"
 # -------------------------
 # Run TREBL Python script
 # -------------------------
-python -u /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/notebooks/NKX2-2/scripts/trebl_experiment_pipeline_no_err_corr_puro_only_downsampling.py "$FASTQ_FILE" --mode "$MODE"
+/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/conda/trebl_env/bin/python /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/notebooks/NKX2-2/scripts/trebl_experiment_pipeline_no_err_corr_puro_only_downsampling.py "$FASTQ_FILE" --mode "$MODE"

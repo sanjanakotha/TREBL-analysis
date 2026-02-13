@@ -48,7 +48,7 @@ name_before_assembled, *rest = base_name.split(".assembled")
 chunks_part = rest[0] if rest else ""
 
 # Clean name: remove leading/trailing dots or underscores
-name_only = f"{name_before_assembled}{chunks_part}".strip("._")
+name_only = f"{name_before_assembled}{chunks_part}".strip("._").replace(".", "_")
 
 db_dir = "/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/duckdb/NKX2-2_downsampling"
 os.makedirs(db_dir, exist_ok=True)
