@@ -13,9 +13,31 @@ from Bio.Seq import Seq
 conda_env='/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/conda/umi_tools/'
 
 def rc_and_swap(preceder: str, post: str, length: int) -> (str, str):
-    """
-    Given original `preceder` and `post`, return new preceder_rc and post_rc
-    for reverse‑complement mode: preceder_rc = RC(post), post_rc = RC(preceder).
+    """Generate reverse complement patterns for barcode extraction.
+    
+    Transforms preceder and post patterns for reverse complement mode by
+    reverse complementing and swapping their positions. This is used when
+    sequences need to be processed in reverse orientation.
+    
+    Args:
+        preceder (str): Original DNA sequence pattern that precedes the barcode.
+        post (str): Original DNA sequence pattern that follows the barcode.
+        length (int): Length parameter (currently unused but maintained for compatibility).
+        
+    Returns:
+        tuple[str, str]: A tuple containing:
+            - preceder_rc (str): Reverse complement of the original post sequence
+            - post_rc (str): Reverse complement of the original preceder sequence
+            
+    Example:
+        >>> preceder, post = "ATCG", "GCTA"
+        >>> rc_preceder, rc_post = rc_and_swap(preceder, post, 20)
+        >>> print(f"RC preceder: {rc_preceder}, RC post: {rc_post}")
+        RC preceder: TAGC, RC post: CGAT
+        
+    Note:
+        The swap occurs because in reverse complement orientation, the roles
+        of preceder and post patterns are reversed.
     """
     preceder_rc = str( Seq(post).reverse_complement() )
     post_rc     = str( Seq(preceder).reverse_complement() )
@@ -23,10 +45,30 @@ def rc_and_swap(preceder: str, post: str, length: int) -> (str, str):
     
 @time_it
 def concatenate_fastqs(input_fastq_list, output_dir):
-    """
-    Concatenate multiple FASTQ files into a single temporary FASTQ in output_dir.
+    """Concatenate multiple FASTQ files into a single temporary file.
     
-    Returns the path to the concatenated file.
+    Combines multiple FASTQ files into one temporary file for batch processing
+    with UMI-tools. Handles both single file inputs and lists of files.
+    
+    Args:
+        input_fastq_list (str or list[str]): Path to single FASTQ file or list
+            of FASTQ file paths to concatenate.
+        output_dir (str or Path): Directory where temporary concatenated file
+            will be created.
+            
+    Returns:
+        str: Path to the concatenated FASTQ file. If input was a single file,
+            returns the original file path unchanged.
+            
+    Note:
+        Creates a temporary file named "tmp_combined.fastq" in the output directory.
+        
+    Example:
+        >>> files = ["sample1.fastq", "sample2.fastq", "sample3.fastq"]
+        >>> combined_path = concatenate_fastqs(files, "temp_dir/")
+        >>> print(f"Combined file: {combined_path}")
+        Combined file: temp_dir/tmp_combined.fastq
+        Done in 5.23 seconds.
     """
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -44,13 +86,47 @@ def concatenate_fastqs(input_fastq_list, output_dir):
     return str(tmp_fastq)
     
 def run_whitelist_on_concat_domains(fastq_path, output_dir, set_cell_number=None, prefix=None):
-    """
-    Run umi_tools whitelist on a simplified FASTQ (concatenated barcodes only).
+    """Execute UMI-tools whitelist on concatenated barcode sequences.
+
+    Runs UMI-tools whitelist algorithm on a FASTQ file containing extracted
+    and concatenated barcode sequences to identify canonical sequences and
+    group similar sequences for error correction.
 
     Args:
-        fastq_path (str or Path): Path to the FASTQ file containing extracted barcodes.
-        output_dir (str or Path): Directory to save whitelist outputs.
-        prefix (str, optional): Prefix for naming log and output files (default = FASTQ basename).
+        fastq_path (str or Path): Path to FASTQ file containing extracted barcodes.
+        output_dir (str or Path): Directory to save whitelist outputs including
+            log files, whitelist text files, and diagnostic plots.
+        set_cell_number (int, optional): Force a specific number of expected
+            cell barcodes instead of using automatic knee detection. Defaults to None.
+        prefix (str, optional): Prefix for output file naming. If None, uses
+            the FASTQ filename stem. Defaults to None.
+
+    Returns:
+        dict: Dictionary with paths to generated files:
+            - "log": Path to the whitelist log file
+            - "whitelist": Path to the whitelist text output file  
+            - "plot_prefix": Prefix for generated diagnostic plots
+
+    Raises:
+        subprocess.CalledProcessError: If UMI-tools whitelist command fails.
+
+    Example:
+        >>> result = run_whitelist_on_concat_domains(
+        ...     "barcodes.fastq", 
+        ...     "output/", 
+        ...     set_cell_number=1000,
+        ...     prefix="sample1"
+        ... )
+        Running umi_tools whitelist on barcodes.fastq ...
+        Whitelist complete.
+        - Log: output/sample1_whitelist.log
+        - Output: output/sample1_whitelist.txt
+        - Plots: output/sample1_plots_*.png
+
+    Note:
+        Uses density-based knee detection method by default. The barcode pattern
+        "(?P<umi_1>.{1})(?P<cell_1>.*)" extracts the entire sequence as cell barcode
+        with a single dummy UMI base. Requires UMI-tools conda environment.
     """
     fastq_path = Path(fastq_path).resolve()
     output_dir = Path(output_dir).resolve()
@@ -92,19 +168,35 @@ def run_whitelist_on_concat_domains(fastq_path, output_dir, set_cell_number=None
     }
 
 def convert_txt_to_whitelist_mapping_df_from_path(whitelist_path):
-    """
-    Read a umi_tools whitelist text file (single concatenated FASTQ) and
-    build a mapping DataFrame identical to the old per-barcode function.
+    """Convert UMI-tools whitelist output to sequence mapping DataFrame.
 
-    Parameters:
-        whitelist_path (str or Path): Path to the whitelist txt file.
-        reverse_complement (bool): Whether to reverse complement sequences.
+    Reads a UMI-tools whitelist text file and creates a mapping DataFrame
+    that shows the relationship between original sequences and their
+    canonical (corrected) forms for downstream error correction.
+
+    Args:
+        whitelist_path (str or Path): Path to the whitelist text file generated
+            by UMI-tools. Expected format: tab-separated with columns
+            [canonical, collapsed, largest_count, counts].
 
     Returns:
-        pd.DataFrame: Mapping DataFrame with columns 'original' and 'canonical'.
-    """
-    
+        pd.DataFrame: Mapping DataFrame with columns:
+            - "original": Original sequence (canonical or collapsed)
+            - "canonical": Canonical sequence this original maps to
 
+    Example:
+        >>> mapping_df = convert_txt_to_whitelist_mapping_df_from_path("whitelist.txt")
+        >>> print(mapping_df.head())
+               original    canonical
+        0  ATCGATCGATCG  ATCGATCGATCG
+        1  ATCGATCGATCT  ATCGATCGATCG  
+        2  ATCGATCGATTG  ATCGATCGATCG
+        
+    Note:
+        Each canonical sequence maps to itself, and all sequences listed in the
+        "collapsed" column map to their corresponding canonical sequence.
+        Currently hardcoded to not perform reverse complement transformation.
+    """
     whitelist_path = Path(whitelist_path)
     
     # Assume umi_tools output has canonical, collapsed, largest_count, counts
@@ -127,247 +219,3 @@ def convert_txt_to_whitelist_mapping_df_from_path(whitelist_path):
 
     mapping_df = pd.DataFrame(all_rows)
     return mapping_df
-
-
-# @time_it
-# def run_single_whitelist(barcode, input_fastq, output_dir, reverse_complement):
-#     print(f"Generating whitelist for {barcode.name} (RC={reverse_complement})…")
-
-#     if reverse_complement:
-#         preceder_rc, post_rc = rc_and_swap(barcode.preceder, barcode.post, barcode.length)
-#         bc_pattern = f".*{preceder_rc}(?P<cell_1>.{{{barcode.length}}}){post_rc}(?P<umi_1>.{{1}}).*"
-#     else:
-#         bc_pattern = f".*{barcode.preceder}(?P<cell_1>.{{{barcode.length}}}){barcode.post}(?P<umi_1>.{{1}}).*"
-
-#     log_path       = f"{output_dir}/{barcode.name}_extract.log"
-#     whitelist_path = f"{output_dir}/{barcode.name}_whitelist.txt"
-
-#     cmd = [
-#         "conda", "run", "-p", conda_env, "umi_tools", "whitelist",
-#         "--stdin", input_fastq,
-#         "--bc-pattern", bc_pattern,
-#         "--extract-method", "regex",
-#         "--method", "reads",
-#         "--log", log_path,
-#         "--stdout", whitelist_path
-#     ]
-
-#     subprocess.run(cmd, check=True)
-#     return f"Whitelist generated for {barcode.name} at {whitelist_path}"
-    
-
-# def run_whitelist_parallel(barcodes, input_fastq, output_dir, reverse_complement, max_workers=8):
-#     """
-#     Run umi_tools whitelist in parallel for multiple Barcode objects.
-
-#     Parameters:
-#         barcodes (list[Barcode]): List of Barcode objects.
-#         input_fastq (str or list[str]): Path(s) to input FASTQ files.
-#         output_dir (str): Directory to save logs and whitelists.
-#         max_workers (int): Number of parallel processes.
-#     """
-#     # Concatenate FASTQs if it's a list
-#     input_fastq_path = concatenate_fastqs(input_fastq, output_dir)
-
-#     results = []
-#     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-#         future_to_barcode = {executor.submit(run_single_whitelist, bc, input_fastq_path, output_dir, reverse_complement): bc for bc in barcodes}
-#         for future in as_completed(future_to_barcode):
-#             try:
-#                 result = future.result()
-#                 results.append(result)
-#                 print(result)
-#             except subprocess.CalledProcessError as e:
-#                 bc = future_to_barcode[future]
-#                 print(f"Error processing {bc.name}: {e}")
-#     return results
-
-# def convert_txt_to_whitelist_mapping_df(barcode, output_dir, reverse_complement):
-#     """
-#     Read the whitelist file for a single Barcode object and build a mapping
-#     DataFrame from collapsed barcodes to canonical barcodes.
-#     Reverse complement barcodes if reverse_complement=True.
-
-#     Parameters:
-#         barcode (Barcode): The Barcode object, must have attribute 'name'.
-#         output_dir (str or Path): Directory where the whitelist file is saved.
-#         reverse_complement (bool): Whether to reverse complement barcodes.
-
-#     Returns:
-#         pd.DataFrame: Mapping DataFrame with columns 'original' and 'canonical'.
-#     """
-#     output_dir = Path(output_dir)
-#     whitelist_path = output_dir / f"{barcode.name}_whitelist.txt"
-    
-#     wl_df = pd.read_csv(
-#         whitelist_path, sep="\t", header=None,
-#         names=["canonical", "collapsed", "largest_count", "counts"]
-#     )
-
-#     def maybe_revcomp(seq):
-#         if pd.isna(seq):
-#             return seq
-#         return str(Seq(seq).reverse_complement()) if reverse_complement else seq
-
-#     all_rows = []
-#     for _, row in wl_df.iterrows():
-#         canonical = maybe_revcomp(row["canonical"])
-#         all_rows.append({"original": canonical, "canonical": canonical})
-        
-#         if pd.notna(row["collapsed"]):
-#             for c in row["collapsed"].split(","):
-#                 all_rows.append({"original": maybe_revcomp(c), "canonical": canonical})
-    
-#     mapping_df = pd.DataFrame(all_rows)
-#     return mapping_df
-
-def summarize_whitelist(barcode, output_dir, reverse_complement, fig=None, axs=None, figsize=(16, 4), dpi=300):
-    """
-    Summarize a umi_tools whitelist for a single Barcode and plot 4 summary plots side by side:
-        1. Bar chart: original sequences vs canonical sequences
-        2. Histogram of group sizes
-        3. Scatter: largest member vs group size
-        4. Scatter: largest member vs sum of smaller members
-
-    Parameters:
-        barcode (Barcode): Barcode object whose whitelist to summarize.
-        output_dir (str or Path): Directory containing the whitelist output.
-        fig (matplotlib.figure.Figure, optional): Pre-created figure. If None, new figure is created.
-        axs (array-like, optional): Pre-created matplotlib axes to plot on. If None, new axes are created.
-        figsize (tuple): Figure size if creating a new figure.
-        dpi (int): Figure DPI if creating a new figure.
-
-    Returns:
-        matplotlib.figure.Figure: Figure object used for plotting
-        array-like: Axes array used for plotting
-    """
-    
-    output_dir = Path(output_dir)
-    whitelist_path = output_dir / f"{barcode.name}_whitelist.txt"
-    
-    wl_df = pd.read_csv(
-        whitelist_path, sep="\t", header=None,
-        names=["canonical", "collapsed", "largest_count", "counts"]
-    )   
-    
-    # Number of sequences per canonical
-    wl_df["collapsed_list"] = wl_df["collapsed"].fillna("").apply(lambda x: x.split(",") if x else [])
-    wl_df["num_merged"] = wl_df["collapsed_list"].apply(len)
-    
-    def parse_counts(row):
-        if pd.isna(row["counts"]) or str(row["counts"]).strip() == "":
-            return row["largest_count"], 0
-        rest = sum(int(c) for c in str(row["counts"]).split(",") if c.strip())
-        largest = row["largest_count"] - rest
-        return largest, rest
-    
-    wl_df[["largest_count", "rest_count"]] = wl_df.apply(parse_counts, axis=1, result_type="expand")
-    
-    # Total counts for bar chart
-    total_original_seqs = wl_df["num_merged"].sum() + len(wl_df)
-    total_canonical_seqs = len(wl_df)
-
-    # Create figure/axes if not provided
-    if fig is None or axs is None:
-        fig, axs = plt.subplots(1, 4, figsize=figsize, dpi=dpi)
-
-    # Panel 1: Bar chart of original vs canonical sequences
-    axs[0].bar(["Before", "After"], [total_original_seqs, total_canonical_seqs],
-               color=[sns.color_palette('Paired')[0], sns.color_palette('Paired')[1]])
-    axs[0].set_ylabel("Number of sequences")
-    # Annotate counts above each bar
-    for x, y in zip(["Before", "After"], [total_original_seqs, total_canonical_seqs]):
-        axs[0].text(x, y + max([total_original_seqs, total_canonical_seqs])*0.02, f"{y:,}", 
-                    ha='center', va='bottom', fontsize='medium', weight='bold')
-
-    # Panel 2: Histogram of group sizes
-    axs[1].hist(wl_df["num_merged"] + 1, bins=30, edgecolor='black')
-    axs[1].set_xlabel("Group size")
-    axs[1].set_ylabel("Frequency")
-    
-    # Panel 3: Scatter - largest member vs group size
-    axs[2].scatter(wl_df["largest_count"], wl_df["num_merged"] + 1, alpha=0.6)
-    axs[2].set_xlabel("Reads of largest")
-    axs[2].set_ylabel("Group size")
-    
-   # Panel 4: Scatter - largest member vs sum of smaller members
-    axs[3].scatter(wl_df["largest_count"], wl_df["rest_count"], alpha=0.6)
-    axs[3].set_xlabel("Reads of largest")
-    axs[3].set_ylabel("Summed merged reads")
-    axs[3].set_xscale('log')
-    axs[3].set_yscale('log')
-    
-    # Save current axis limits
-    xlims = axs[3].get_xlim()
-    ylims = axs[3].get_ylim()
-    
-    # Determine line range within current view
-    line_min = min(xlims[0], ylims[0])
-    line_max = max(xlims[1], ylims[1])
-    
-    # Plot y=x line
-    axs[3].plot([line_min, line_max], [line_min, line_max], 'r--', alpha=0.7)
-    
-    # Restore axis limits
-    axs[3].set_xlim(xlims)
-    # axs[3].set_ylim(ylims)
-        
-    fig.tight_layout(pad=2)
-    
-    return fig, axs
-
-def plot_all_whitelists(barcodes, output_dir, reverse_complement, n_cols=4, dpi=300):
-    """
-    Plot summaries of multiple barcodes in a grid layout using summarize_whitelist.
-
-    Parameters
-    ----------
-    barcodes : list[Barcode]
-        List of Barcode objects.
-    output_dir : str
-        Directory where whitelist outputs are saved.
-    n_cols : int, optional
-        Number of panels per row. Default is 4.
-    dpi : int, optional
-        Figure DPI. Default is 300.
-
-    Returns
-    -------
-    fig : matplotlib.figure.Figure
-        The figure object containing all barcode summaries.
-    """
-    n_barcodes = len(barcodes)
-
-    # Create figure with n_barcodes rows, n_cols columns
-    fig, axs = plt.subplots(n_barcodes, n_cols, figsize=(4 * n_cols, 4 * n_barcodes), dpi=dpi)
-
-    # Ensure axs is 2D array for consistent indexing
-    if n_barcodes == 1:
-        axs = axs.reshape(1, -1)
-
-    # Loop over barcodes
-    for i, bc in enumerate(barcodes):
-        # Pass the row of axes to summarize_whitelist
-        fig, _ = summarize_whitelist(
-            barcode=bc,
-            output_dir=output_dir,
-            fig=fig,
-            axs=axs[i],
-            reverse_complement = reverse_complement
-        )
-
-        # Add row-level label for the barcode
-        fig.text(
-            -0.02,  # x-position (left margin)
-            (n_barcodes - i - 0.5) / n_barcodes,  # y-position (center of row)
-            f"{bc.name}",
-            fontsize='large',
-            weight='bold',
-            rotation=90,
-            va='center'
-        )
-
-    sns.despine()
-    plt.tight_layout(pad=2)
-
-    return fig

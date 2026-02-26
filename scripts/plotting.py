@@ -6,24 +6,29 @@ from pathlib import Path
 import pandas as pd
 
 def plot_reads_histogram(map_df, save_path=None, ax=None, **kwargs):    
-    """
-    Plots a histogram of read counts on a log-log scale.
+    """Plot a histogram of read counts on a log-log scale.
 
-    Parameters
-    ----------
-    map_df : pd.DataFrame
-        DataFrame containing at least a "count" column.
-    save_path : str, optional
-        Path to save the figure.
-    ax : matplotlib.axes.Axes, optional
-        Axis to plot on. If None, a new figure is created.
-    **kwargs : dict
-        Additional keyword arguments passed to sns.histplot.
-    
-    Returns
-    -------
-    matplotlib.axes.Axes
-        Axis with the histogram plotted.
+    Creates a histogram visualization of read count distributions using
+    logarithmic scaling on both axes for better visualization of wide
+    dynamic ranges typical in sequencing data.
+
+    Args:
+        map_df (pd.DataFrame): DataFrame containing at least a "count" column
+            with read count values.
+        save_path (str, optional): Path to save the figure. If None, figure
+            is not saved. Defaults to None.
+        ax (matplotlib.axes.Axes, optional): Existing axis to plot on. If None,
+            a new figure is created. Defaults to None.
+        **kwargs: Additional keyword arguments passed to sns.histplot().
+
+    Returns:
+        matplotlib.axes.Axes: The axis object with the histogram plotted.
+
+    Example:
+        >>> df = pd.DataFrame({'count': [10, 100, 1000, 50, 500]})
+        >>> ax = plot_reads_histogram(df, save_path="read_dist.png")
+        >>> plt.show()
+
     """
     if ax is None:
         fig, ax = plt.subplots(figsize=(6, 4), dpi=300)
@@ -44,17 +49,48 @@ def plot_reads_histogram(map_df, save_path=None, ax=None, **kwargs):
     return ax
     
     
-def plot_error_correction(output_figures_path, table_prefix_with_descriptor, save_dir=None, plot=True):
-    """
-    Summarize counts of canonical subsequences (barcodes) per AD sequence
-    from whitelist files, produce a summary table and optional plots.
+def plot_error_correction(output_figures_path, table_prefix_with_descriptor, plot=True):
+    """Summarize and visualize error correction results from whitelist files.
+    
+    Processes whitelist files generated during error correction to create
+    summary statistics and visualizations of barcode collapse and correction
+    performance. Reads the first whitelist file found and generates comprehensive
+    plots showing before/after sequence counts and correction statistics.
     
     Args:
-        save_dir (str or Path, optional): Directory to save outputs.
-        plot (bool): Whether to produce plots.
+        output_figures_path (str or Path): Directory containing whitelist files
+            and where output plots will be saved.
+        table_prefix_with_descriptor (str): Prefix for output filenames.
+        plot (bool, optional): Whether to generate and save plots. 
+            Defaults to True.
     
     Returns:
-        pd.DataFrame: summary table of barcodes with counts and group sizes.
+        pd.DataFrame: Summary table with columns:
+            - canonical: Canonical barcode sequence
+            - collapsed: Comma-separated list of collapsed sequences
+            - largest_count: Read count of most abundant sequence in group
+            - counts: Comma-separated counts of collapsed sequences
+            - collapsed_list: List of collapsed sequences
+            - num_merged: Number of sequences merged into canonical
+            - rest_count: Sum of counts from non-canonical sequences
+    
+    Raises:
+        FileNotFoundError: If no whitelist files (*_whitelist.txt) are found
+            in the specified directory.
+    
+    Example:
+        >>> summary = plot_error_correction(
+        ...     "results/error_corrected/",
+        ...     "step1_",
+        ...     plot=True
+        ... )
+        >>> print(f"Processed {len(summary)} canonical barcodes")
+        Saved barcode whitelist plots: results/error_corrected/step1_whitelist_summary.png
+        
+    Note:
+        Expects whitelist files to have tab-separated format with columns:
+        canonical, collapsed, largest_count, counts. Uses seaborn 'talk' context
+        for plot styling.
     """
     import glob
     
@@ -99,24 +135,39 @@ def plot_error_correction(output_figures_path, table_prefix_with_descriptor, sav
     return summary_df
     
 def plot_all_whitelists_from_summary(summary_df, n_cols=4, dpi=300):
-    """
-    Plot summaries of multiple barcodes using precomputed summary_df
-    instead of reading whitelist files again.
+    """Create comprehensive visualization of barcode error correction summary.
     
-    Parameters
-    ----------
-    summary_df : pd.DataFrame
-        DataFrame returned from summarize_canonical_subsequences, must contain
-        columns ['barcode', 'canonical', 'num_merged', 'largest_count', 'rest_count'].
-    n_cols : int, optional
-        Number of panels per row. Default is 4.
-    dpi : int, optional
-        Figure DPI. Default is 300.
+    Generates a multi-panel figure showing various aspects of barcode error
+    correction performance including sequence reduction, group size distributions,
+    and read count relationships between canonical and collapsed sequences.
     
-    Returns
-    -------
-    fig : matplotlib.figure.Figure
-        Figure containing all barcode summaries.
+    Args:
+        summary_df (pd.DataFrame): DataFrame with error correction summary data.
+            Must contain columns: ['canonical', 'num_merged', 'largest_count', 'rest_count'].
+        n_cols (int, optional): Number of panels per row. Currently fixed at 4
+            for the standard panel layout. Defaults to 4.
+        dpi (int, optional): Figure resolution in dots per inch. Defaults to 300.
+    
+    Returns:
+        matplotlib.figure.Figure: Figure object containing four panels:
+            - Panel 1: Bar chart of sequence counts before/after correction
+            - Panel 2: Histogram of group sizes (number of sequences per canonical)
+            - Panel 3: Scatter plot of largest member count vs group size  
+            - Panel 4: Log-log scatter of largest vs summed smaller member counts
+    
+    Example:
+        >>> summary_df = pd.DataFrame({
+        ...     'num_merged': [0, 2, 1, 3],
+        ...     'largest_count': [100, 500, 200, 1000], 
+        ...     'rest_count': [0, 50, 25, 150]
+        ... })
+        >>> fig = plot_all_whitelists_from_summary(summary_df)
+        >>> plt.show()
+        
+    Note:
+        Panel 4 includes a diagonal reference line (y=x) to show the relationship
+        between canonical and collapsed sequence read counts. Uses seaborn 'Paired'
+        color palette for consistent styling.
     """
     n_barcodes = 1
     n_rows = n_barcodes
@@ -182,6 +233,48 @@ def plot_all_whitelists_from_summary(summary_df, n_cols=4, dpi=300):
     return fig
 
 def plot_loss_helper(ax, palette, text_offset, show_background, default_map_order, output_figures_path, table_prefix_with_descriptor, df):
+    """Generate horizontal bar plot showing read loss through processing pipeline steps.
+    
+    Creates a visualization showing both total reads and unique counts at each
+    step of the processing pipeline, with optional background bars to show
+    the difference between total and unique counts.
+    
+    Args:
+        ax (matplotlib.axes.Axes or None): Existing axis to plot on. If None,
+            a new figure is created.
+        palette (str): Name of seaborn color palette to use for bars.
+        text_offset (float): Vertical offset for read count labels to avoid overlap.
+        show_background (bool): Whether to show background bars for total reads
+            with reduced alpha transparency.
+        default_map_order (list): Ordered list of pipeline step names for
+            consistent color mapping across plots.
+        output_figures_path (str): Directory path where plot will be saved.
+        table_prefix_with_descriptor (str): Prefix for output filename.
+        df (pd.DataFrame): DataFrame with columns:
+            - description: Step descriptions for y-axis labels  
+            - map: Pipeline step names for color mapping
+            - total_reads: Total read counts per step
+            - unique_count: Unique sequence counts per step
+            
+    Returns:
+        tuple: (fig, ax) matplotlib Figure and Axes objects.
+        
+    Example:
+        >>> df = pd.DataFrame({
+        ...     'description': ['Step 1', 'Step 2'], 
+        ...     'map': ['map1', 'map2'],
+        ...     'total_reads': [10000, 8000],
+        ...     'unique_count': [5000, 4000]
+        ... })
+        >>> fig, ax = plot_loss_helper(
+        ...     None, 'Set2', 0.1, True, ['map1', 'map2'], 
+        ...     'results/', 'sample_', df
+        ... )
+        
+    Note:
+        Automatically saves plot to output_figures_path with filename 
+        "{table_prefix_with_descriptor}loss.png". 
+    """
     # Initialize plot
     if ax is None:
         sns.set(style="white", context="talk")

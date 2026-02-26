@@ -32,14 +32,68 @@ MAP_ORDERS = {
 
 class TreblPipeline:
     """
-    End-to-end TREBL analysis steps.
+    End-to-end TREBL analysis pipeline orchestrator.
 
-    Attributes:
-        db_path (str): Path to the DuckDB database used for all steps.
-        error_correction (bool): Whether to apply error-correction
-            operations during refinement.
-        output_figures_path (str | None): Directory to write figures.
-            If None, figures are not generated.
+    This class coordinates the complete TREBL workflow including initial barcode
+    mapping, quality filtering, error correction, UMI deduplication, and activity
+    score calculations. Supports both simple validation workflows and complex
+    experimental analyses with multiple samples and replicates.
+
+    Args:
+        db_path (str): Path to the DuckDB database file. Will be created if
+            it doesn't exist.
+        design_file_path (str or None): Path to the design validation file. 
+            If None, design-based filtering is skipped throughout the pipeline.
+        error_correction (bool, optional): Whether to enable UMI-tools based
+            error correction during refinement steps. Defaults to False.
+        output_path (str or Path, optional): Output directory for results,
+            figures, and intermediate files. If None, results are not saved
+            to disk. Defaults to None.
+        test_n_reads (int or bool, optional): If set to an integer, limits
+            initial mapping to the first N reads for rapid testing/debugging.
+            If False, processes all reads. Defaults to False.
+
+    Example:
+        >>> # Initialize pipeline for full experiment
+        >>> pipeline = TreblPipeline(
+        ...     db_path="experiment.duckdb",
+        ...     design_file_path="designs.csv",
+        ...     error_correction=True,
+        ...     output_path="results/"
+        ... )
+        >>> 
+        >>> # Run Step 1: Initial barcode mapping
+        >>> step1_df = pipeline.run_step_1(
+        ...     seq_file="step1_reads.fastq",
+        ...     bc_objects=[ad_bc, rep_bc],
+        ...     column_pairs=[("REP_BC", "AD")],
+        ...     reads_threshold=10
+        ... )
+        >>> 
+        >>> # Analyze full experiment with UMI deduplication
+        >>> results = pipeline.trebl_experiment_analysis(
+        ...     AD_seq_files=["ad_sample1.fastq", "ad_sample2.fastq"],
+        ...     AD_bc_objects=[ad_bc, adbc_bc],
+        ...     RT_seq_files=["rt_sample1.fastq", "rt_sample2.fastq"], 
+        ...     RT_bc_objects=[rt_bc],
+        ...     reverse_complement=True,
+        ...     AD_umi_object=umi_obj,
+        ...     RT_umi_object=umi_obj
+        ... )
+        >>> 
+        >>> # Calculate final activity scores
+        >>> mean_activity, summed_activity = pipeline.calculate_activity_scores(
+        ...     step1_path="results/step1.csv",
+        ...     AD_bc_objects=[ad_bc, adbc_bc],
+        ...     RT_bc_objects=[rt_bc],
+        ...     time_regex=r"(\d+)h",
+        ...     rep_regex=r"rep(\d+)"
+        ... )
+
+    Note:
+        The pipeline automatically handles table naming, intermediate file management,
+        and result aggregation across multiple samples. All processing steps are
+        logged and intermediate results are saved for debugging and validation.
     """
 
     def __init__(
@@ -53,16 +107,28 @@ class TreblPipeline:
         """
         Initialize a TREBL pipeline run.
 
+        Sets up database connection, output directories, and processing configuration.
+        Creates necessary directory structure for results and figures if output_path
+        is provided.
+
         Args:
-            db_path (str): Path to the DuckDB database.
-            design_file_path (str | None): Path to the design file. If None,
-                design-based filtering is skipped.
-            error_correction (bool, optional): Whether to enable error correction
-                during refinement. Defaults to False.
-            output_path (str | None, optional): Output directory for results
-                and figures. If None, nothing is written to disk.
-            test_n_reads (int | bool, optional): If set, limits mapping to the
-                first N reads for testing/debugging.
+            db_path (str): Path to the DuckDB database file. Will be created if
+                it doesn't exist.
+            design_file_path (str or None): Path to the design validation file. 
+                If None, design-based filtering is skipped throughout the pipeline.
+            error_correction (bool, optional): Whether to enable UMI-tools based
+                error correction during refinement steps. Defaults to False.
+            output_path (str or Path, optional): Output directory for results,
+                figures, and intermediate files. If None, results are not saved
+                to disk. Defaults to None.
+            test_n_reads (int or bool, optional): If set to an integer, limits
+                initial mapping to the first N reads for rapid testing/debugging.
+                If False, processes all reads. Defaults to False.
+
+        Note:
+            When output_path is provided, creates subdirectories:
+            - {output_path}/figures/ for all plots and visualizations
+            - {output_path}/{sample_name}/ for per-sample intermediate files
         """
         self.con = duckdb.connect(db_path)
         self.db_path = db_path
@@ -81,18 +147,24 @@ class TreblPipeline:
             
     def _run_initial_mappers(self, mapper_specs):
         """
-        Helper function to run one or more InitialMapper instances.
+        Execute one or more InitialMapper instances with specified configurations.
+
+        Internal helper method that creates and runs InitialMapper objects based
+        on the provided specifications. Automatically handles test mode if enabled.
 
         Args:
             mapper_specs (list[dict]): List of mapper specifications. Each dict
                 must contain:
-                    - seq_file (str): FASTQ file path
-                    - step_name (str): Step name prefix for DuckDB tables
-                    - bc_objects (list): Barcode objects
+                    - seq_file (str): FASTQ file path for barcode extraction
+                    - step_name (str): Step name prefix for DuckDB table naming
+                    - bc_objects (list): Barcode objects defining extraction patterns
                     - reverse_complement (bool): Whether to reverse complement reads
-                    - design_file_path (str | None): Design file path
+                    - design_file_path (str or None): Design validation file path
+
+        Note:
+            Respects the test_n_reads setting for rapid testing. Each mapper
+            creates its own initial mapping table in the connected database.
         """
-        ...
         for spec in mapper_specs:
             mapper = initial_map.InitialMapper(
                 db_path=self.db_path,
@@ -109,14 +181,25 @@ class TreblPipeline:
 
     def _run_refiners(self, refiners, plot_titles):
         """
-        Helper function to run MapRefiner instances and optionally generate loss plots.
+        Execute MapRefiner instances and optionally generate loss plots.
+
+        Internal helper method that runs refinement pipelines and creates
+        standardized loss visualization plots if output path is configured.
 
         Args:
-            refiners (list[MapRefiner]): Refiners to execute.
-            plot_titles (list[str | None]): Titles for loss plots.
+            refiners (list[MapRefiner]): List of MapRefiner instances to execute.
+                Each refiner should be fully configured with processing parameters.
+            plot_titles (list[str or None]): Titles for generated loss plots.
+                Must match the length of refiners list. Use None to skip plotting
+                for a particular refiner.
 
         Returns:
-            list[MapRefiner]: Executed refiners.
+            list[MapRefiner]: The same refiner objects after execution, allowing
+                access to results and generated tables.
+
+        Note:
+            Loss plots show processing efficiency across refinement steps and
+            are saved automatically if output_figures_path is configured.
         """
         for refiner, plot_title in zip(refiners, plot_titles):
             refiner.refine_map_from_db()
@@ -130,15 +213,34 @@ class TreblPipeline:
 
     def reads_distribution(self, seq_file, bc_objects, step_name, reverse_complement):
         """
-        Visualize read-count distributions for a single FASTQ file to help decide a threshold. 
+        Visualize read-count distributions for threshold determination.
 
-        This performs initial mapping and grouping and plots a reads histogram.
+        Performs initial mapping and grouping for a single FASTQ file and generates
+        a histogram showing the distribution of read counts per barcode combination.
+        This analysis helps determine appropriate read count thresholds for filtering.
 
         Args:
-            seq_file (str): FASTQ file path.
-            bc_objects (list): Barcode objects.
-            step_name (str): Step name used for DuckDB tables.
-            reverse_complement (bool): Whether to reverse complement reads.
+            seq_file (str): Path to FASTQ file containing sequences for analysis.
+            bc_objects (list[Barcode]): Barcode objects defining extraction patterns
+                and expected lengths for the library.
+            step_name (str): Step identifier used for DuckDB table naming and
+                plot titles.
+            reverse_complement (bool): Whether sequences should be reverse
+                complemented prior to barcode extraction.
+
+        Note:
+            Creates grouped barcode combinations table and generates a read count
+            histogram. Useful for determining reads_threshold parameters before
+            running full refinement pipelines.
+
+        Example:
+            >>> pipeline.reads_distribution(
+            ...     seq_file="test_reads.fastq",
+            ...     bc_objects=[ad_bc, rep_bc], 
+            ...     step_name="threshold_test",
+            ...     reverse_complement=True
+            ... )
+            # Generates histogram showing read count distribution
         """
         
         self._run_initial_mappers([
@@ -929,54 +1031,86 @@ class TreblPipeline:
         rep_regex
     ):
         """
-        Calculate activity scores from AD and RT experiment results using a Step 1
-        barcode-to-AD mapping file.
+        Compute activity scores from AD and RT experiment results using Step 1 mapping.
 
-        This function calculates two types of activity scores:
+        Calculates two complementary activity metrics by combining AD library UMI counts
+        (input) with RT library UMI counts (output) using the Step 1 barcode-to-gene
+        mapping as the linking table. Returns a consolidated table with both per-barcode
+        averaged activity and summed activity calculations.
 
-        1. Averaged Activity:
-            Activity is calculated per barcode as:
-                activity = RT UMIs / AD UMIs
-            The mean and standard deviation of activity are computed for each
-            (AD, time, rep) and pivoted to (AD, rep) × time.
+        Args:
+            step1_path (str): Path to the Step 1 mapping CSV file containing the
+                canonical barcode-to-gene relationships.
+            AD_bc_objects (list[Barcode]): List of AD barcode objects with `.name`
+                attributes corresponding to columns in the Step 1 mapping.
+            RT_bc_objects (list[Barcode]): List of RT barcode objects with `.name`
+                attributes for reporter identification.
+            time_regex (str): Regular expression to extract timepoint values from
+                sample names. Should contain a capture group for the time value.
+                Example: r"(\d+)h" for "2h", r"t(\d+)" for "t24".
+            rep_regex (str): Regular expression to extract replicate identifiers
+                from sample names. Should contain a capture group for replicate number.
+                Example: r"rep(\d+)" for "rep1", r"r(\d+)" for "r2".
 
-        2. Summed Activity:
-            AD UMIs and RT UMIs are summed across barcodes for each
-            (AD, time, rep), and activity is calculated as:
-                activity = sum(RT UMIs) / sum(AD UMIs)
-            The resulting activity is returned **only in pivoted form**.
+        Returns:
+            pd.DataFrame: Consolidated activity scores table with hierarchical columns:
+                - Index: (AD, replicate) multi-index
+                - Columns: Multi-level structure with:
+                    - Level 0: timepoint values (e.g., 0, 2, 24)
+                    - Level 1: metric types ('mean_activity', 'std_activity', 'summed_activity')
+                
+                Example structure:
+                                        0                    2                    24
+                            mean  std  sum      mean  std  sum      mean  std  sum
+                AD    rep                                                            
+                GENE1  1      0.45  0.12  0.52    1.23  0.34  1.15    2.10  0.67  1.98
+                    2      0.48  0.15  0.55    1.18  0.29  1.12    2.05  0.71  1.95
 
-        Parameters
-       -------
-        step1_path : str
-            Path to the Step 1 mapping CSV file.
-        AD_bc_objects : list
-            List of AD barcode objects with a `.name` attribute.
-        RT_bc_objects : list
-            List of RT barcode objects with a `.name` attribute.
-        time_regex : str
-            Regex to extract the `time` value from the `name` column.
-        rep_regex : str
-            Regex to extract the `rep` (replicate) value from the `name` column.
+        Note:
+            **Activity Score Calculations:**
 
-        Returns
-       ----
-        tuple
-            A tuple containing:
-            - pivoted_mean : pd.DataFrame
-                Mean activity averaged across barcodes
-                (index = AD, rep; columns = time).
-            - pivoted_summed_activity : pd.DataFrame
-                Activity calculated from summed UMIs across barcodes
-                (index = AD, rep; columns = time).
+            1. **Averaged Activity (Per-Barcode)**:
+                - For each barcode: activity = RT_UMIs / AD_UMIs
+                - Mean and std calculated per (AD, time, rep) group
+                - Results show variability across barcodes within each gene
 
-        Output Files
-       ---------
-        If `self.output_path` is set, the following files are written:
-            - unaggregated_activities.csv
-            - activity_mean.csv
-            - activity_std.csv
-            - activity_summed_pivoted.csv
+            2. **Summed Activity (Per-Gene)**:
+                - For each (AD, time, rep): sum all AD_UMIs and RT_UMIs across barcodes
+                - activity = sum(RT_UMIs) / sum(AD_UMIs) 
+                - Results show overall gene-level activity
+
+            **Output Files (if output_path configured):**
+            - `unaggregated_activities.csv`: Raw per-barcode activity scores
+            - `consolidated_activity_scores.csv`: Combined table with all metrics
+
+            **Data Integration Workflow:**
+            1. Load AD and RT experiment results from previous analysis
+            2. Extract time/replicate metadata using provided regex patterns
+            3. Merge with Step 1 mapping to link AD and RT measurements
+            4. Calculate per-barcode activity ratios
+            5. Aggregate using both averaging and summing strategies
+            6. Consolidate into single multi-level DataFrame
+
+        Example:
+            >>> activity_df = pipeline.calculate_activity_scores(
+            ...     step1_path="results/step1.csv",
+            ...     AD_bc_objects=[ad_bc, adbc_bc], 
+            ...     RT_bc_objects=[rt_bc],
+            ...     time_regex=r"(\d+)h",          # Extract "24" from "24h"
+            ...     rep_regex=r"rep(\d+)"          # Extract "1" from "rep1"  
+            ... )
+            >>> print("Activity table shape:", activity_df.shape)
+            >>> print("Available timepoints:", activity_df.columns.get_level_values(0).unique())
+            >>> print("Available metrics:", activity_df.columns.get_level_values(1).unique())
+            >>> 
+            >>> # Access specific metric for all timepoints
+            >>> mean_activities = activity_df.xs('mean_activity', level=1, axis=1)
+            >>> summed_activities = activity_df.xs('summed_activity', level=1, axis=1)
+
+        Raises:
+            ValueError: If regex patterns fail to match sample names
+            FileNotFoundError: If required input CSV files are not found
+            KeyError: If expected columns are missing from input files
         """
 
         import sys
@@ -1050,30 +1184,20 @@ class TreblPipeline:
 
         if self.output_path:
             step1_map_with_ad_rt.to_csv(
-                self.output_path / "unaggregated_activities.csv", index=False
+                self.output_path / "bc_activities.csv", index=False
             )
 
+        # Calculate both averaged and summed activities
         # Averaged activity across barcodes
-        grouped = (
+        grouped_avg = (
             step1_map_with_ad_rt
             .groupby(["AD", "time", "rep"])["activity"]
             .agg(["mean", "std"])
             .reset_index()
         )
 
-        pivoted_mean = grouped.pivot(
-            index=["AD", "rep"], columns="time", values="mean"
-        )
-        pivoted_std = grouped.pivot(
-            index=["AD", "rep"], columns="time", values="std"
-        )
-
-        if self.output_path:
-            pivoted_mean.to_csv(self.output_path / "activity_mean.csv")
-            pivoted_std.to_csv(self.output_path / "activity_std.csv")
-
-        # Summed activity across barcodes (pivoted only)
-        summed = (
+        # Summed activity across barcodes
+        grouped_sum = (
             step1_map_with_ad_rt
             .groupby(["AD", "time", "rep"])
             .agg(
@@ -1082,18 +1206,48 @@ class TreblPipeline:
             )
             .reset_index()
         )
-
-        summed["activity"] = (
-            summed["summed_RT_UMIs"] / summed["summed_AD_UMIs"]
+        
+        grouped_sum["summed_activity"] = (
+            grouped_sum["summed_RT_UMIs"] / grouped_sum["summed_AD_UMIs"]
         )
 
-        pivoted_summed_activity = summed.pivot(
-            index=["AD", "rep"], columns="time", values="activity"
+        # Pivot each metric separately
+        pivoted_mean = grouped_avg.pivot(
+            index=["AD", "rep"], columns="time", values="mean"
+        )
+        pivoted_std = grouped_avg.pivot(
+            index=["AD", "rep"], columns="time", values="std"
+        )
+        pivoted_summed = grouped_sum.pivot(
+            index=["AD", "rep"], columns="time", values="summed_activity"
         )
 
+        # Create consolidated multi-level column DataFrame
+        # First, ensure all DataFrames have the same columns (timepoints)
+        all_timepoints = sorted(set(pivoted_mean.columns) | set(pivoted_std.columns) | set(pivoted_summed.columns))
+        
+        # Reindex all DataFrames to have the same columns
+        pivoted_mean = pivoted_mean.reindex(columns=all_timepoints)
+        pivoted_std = pivoted_std.reindex(columns=all_timepoints)
+        pivoted_summed = pivoted_summed.reindex(columns=all_timepoints)
+        
+        # Create multi-level columns
+        consolidated_data = {}
+        for timepoint in all_timepoints:
+            consolidated_data[(timepoint, 'bc_activity_avg')] = pivoted_mean[timepoint]
+            consolidated_data[(timepoint, 'bc_activity_std')] = pivoted_std[timepoint]
+            consolidated_data[(timepoint, 'pooled_activity')] = pivoted_summed[timepoint]
+        
+        # Create the consolidated DataFrame
+        consolidated_df = pd.DataFrame(consolidated_data)
+        
+        # Sort columns by timepoint first, then by metric
+        consolidated_df = consolidated_df.sort_index(axis=1)
+        
+        # Set proper column names
+        consolidated_df.columns.names = ['timepoint', 'metric']
+        
         if self.output_path:
-            pivoted_summed_activity.to_csv(
-                self.output_path / "activity_summed.csv"
-            )
+            consolidated_df.to_csv(self.output_path / "AD_activities.csv")
 
-        return pivoted_mean, pivoted_summed_activity
+        return consolidated_df

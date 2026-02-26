@@ -21,8 +21,44 @@ from scripts.preprocess import time_it
 from scripts import error_correct
 
 class UMIDeduplicator:
-    """
-    Unified UMI Deduplication class combining simple counts and full UMI-tools pipeline.
+    """Unified UMI Deduplication class combining simple counts and full UMI-tools pipeline.
+    
+    This class provides comprehensive UMI (Unique Molecular Identifier) deduplication
+    functionality, supporting both simple counting methods and advanced UMI-tools
+    directional deduplication workflows.
+    
+    Args:
+        db_path (str): Path to the DuckDB database file.
+        bc_objects (list): List of barcode objects with name and length attributes.
+        step_name (str): Name identifier for this processing step.
+        descriptor (str): Additional descriptor for table naming.
+        step1_map_name (str): Name of the step1 mapping table in the database.
+        fastq_path (str): Path to the input FASTQ file.
+        output_path (str): Directory path for output files.
+        refined_map_suffix (str): Suffix for the final refined mapping table (last step from map refiner).
+        
+    Attributes:
+        db_path (str): Path to DuckDB database.
+        con (duckdb.DuckDBPyConnection): Database connection object.
+        bc_objects (list): Barcode objects.
+        cols (list): List of barcode column names.
+        step_name (str): Processing step identifier.
+        table_prefix (str): Generated prefix for database tables.
+        base (str): Base filename derived from FASTQ path.
+        
+    Example:
+        >>> bc_objs = [barcode1, barcode2]
+        >>> dedup = UMIDeduplicator(
+        ...     db_path="data.db",
+        ...     bc_objects=bc_objs,
+        ...     step_name="trebl_experiment",
+        ...     descriptor="test",
+        ...     step1_map_name="step1_map",
+        ...     fastq_path="sample.fastq.gz",
+        ...     output_path="results/",
+        ...     refined_map_suffix="quality_designed"
+        ... )
+        >>> merged_df = dedup.run_both_deduplications()
     """
 
     def __init__(self, db_path, bc_objects, step_name, descriptor, step1_map_name,
@@ -53,9 +89,18 @@ class UMIDeduplicator:
             self.fastq_path = fastq_path
  
     def counts_per_umi(self):
-        """
-        Returns a DataFrame with simple counts of each UMI per barcode combination.
-        Uses the quality_designed table in DuckDB.
+        """Return DataFrame with simple counts of each UMI per barcode combination.
+        
+        Returns:
+            pd.DataFrame: DataFrame with columns for barcode(s), UMI, and read counts.
+                Sorted by barcode combinations and read counts (descending).
+                
+        Example:
+            >>> counts_df = dedup.counts_per_umi()
+            >>> print(counts_df.head())
+               ADBC2  HawkBCs      UMI  reads
+            0  AAAA      TTTT  ACGTACGT     15
+            1  AAAA      TTTT  TGCATGCA      8
         """
         select_cols_sql = ", ".join(self.cols)  # e.g., "ADBC2, HawkBCs"
 
@@ -71,8 +116,18 @@ class UMIDeduplicator:
         
     # --------- Methods from SimpleUMIDeduplicator ---------
     def unique_umis_per_barcodes(self):
-        """
-        Counts unique UMIs per barcode(s), keeping the original columns distinct.
+        """Count unique UMIs per barcode combination and save as new table.
+        
+        Creates a new table in the database containing the count of distinct UMIs
+        for each barcode combination. 
+        
+        Note:
+            This method creates a new table with suffix '_umis_collapsed' and
+            sets the alias_name attribute to 'count' for the count column.
+            
+        Example:
+            >>> dedup.unique_umis_per_barcodes()
+            # Creates table: trebl_experiment_ADBC2_HawkBCs_test_quality_designed_umis_collapsed
         """
                 
         # Include individual columns in SELECT and GROUP BY
@@ -98,9 +153,26 @@ class UMIDeduplicator:
         self.con.execute(query)
 
     def merge_simple_with_step1_map(self, save = True):
-        """
-        Performs an inner merge of the current table with step1_map_name
-        on the barcode columns (self.cols) and returns the result as a DataFrame.
+        """Merge simple UMI counts with step1 mapping table.
+        
+        Performs an inner join between the UMI count table and the step1 mapping
+        table on barcode columns. Filters out quality and designed columns.
+        
+        Args:
+            save (bool, optional): Whether to save results to CSV file. 
+                Defaults to True.
+                
+        Returns:
+            pd.DataFrame: Merged DataFrame with UMI counts and step1 mapping data.
+                Includes an 'info' column with the step_name value.
+                
+        Note:
+            Removes columns named "Designed" and columns containing "_qual".
+            CSV filename format: {base}_{barcode_cols}_umis_unique_with_step1_map.csv
+            
+        Example:
+            >>> merged_df = dedup.merge_simple_with_step1_map(save=True)
+            Saved to results/sample_ADBC2_HawkBCs_umis_unique_with_step1_map.csv
         """
         select_cols_sql = ", ".join(self.cols)  # e.g., AD_BC, RPTR_BC
         
@@ -132,6 +204,27 @@ class UMIDeduplicator:
 
     @time_it
     def save_simple_deduplication(self):
+        """Save simple UMI deduplication results to TSV files.
+        
+        Saves two files:
+        1. Simple UMI counts per barcode combination
+        2. Read counts per individual UMI
+        
+        Returns:
+            pd.DataFrame: DataFrame containing the simple UMI counts.
+            
+        Note:
+            Files are saved with tab separation (.tsv format).
+            Output filenames: {base}_simple_umi_counts.tsv and {base}_reads_per_umi.tsv
+            Execution time is automatically logged via @time_it decorator.
+            
+        Example:
+            >>> result_df = dedup.save_simple_deduplication()
+            Saved to results/sample_simple_umi_counts.tsv
+            Saved to results/sample_reads_per_umi.tsv
+            Done in 2.34 seconds.
+        """
+
         query = f"""
             SELECT * FROM "{self.new_table_name}"
         """        
@@ -157,21 +250,59 @@ class UMIDeduplicator:
         return merged_df
 
     def run_simple_deduplication(self):
+        """Execute the simple UMI deduplication workflow.
+        
+        Runs the basic UMI counting approach by calling unique_umis_per_barcodes().
+        This method only counts distinct UMIs per barcode combination without
+        considering UMI similarity or directional information.
+        
+        Note:
+            This is the faster, simpler alternative to the full UMI-tools pipeline.
+            Results can be retrieved using merge_simple_with_step1_map() or 
+            save_simple_deduplication().
+        """
         self.unique_umis_per_barcodes()
         #return self.merge_simple_with_step1_map()
 
     def show_tables(self):
+        """Display all tables in the connected DuckDB database.
+        
+        Returns:
+            pd.DataFrame: DataFrame listing all table names in the database.
+            
+        Example:
+            >>> tables_df = dedup.show_tables()
+            >>> print(tables_df)
+                     name
+            0  step1_map
+            1  trebl_experiment_ADBC2_HawkBCs_quality_designed
+        """
         return self.con.execute("SHOW TABLES").fetchdf()
 
     # --------- Methods from UMIToolsDeduplicator ---------
     @preprocess.time_it
     def generate_fastq(self, suffix="_umi_extracted.fastq"):
-        """
-        Generate a FASTQ from self.table_prefix.initial:
-        - Read sequence = concatenated barcode columns
-        - Read ID = UMI
-        - Keep all rows (no deduplication)
-        - Tracks progress using tqdm
+        """Generate FASTQ file with UMIs in headers and concatenated barcodes as sequences.
+        Used for UMI-tools directional deduplication workflow.
+        
+        Creates a FASTQ file where:
+        - Read ID contains the UMI sequence
+        - Read sequence is concatenated barcode columns
+        - Quality scores are placeholder 'I' characters
+        
+        Args:
+            suffix (str, optional): Suffix for output FASTQ filename. 
+                Defaults to "_umi_extracted.fastq".
+                
+        Note:
+            Only includes reads with valid UMI and barcode sequences.
+            
+        Example:
+            >>> dedup.generate_fastq("_custom_suffix.fastq")
+            Generating FASTQ with UMIs in header and barcodes as sequence...
+            Writing FASTQ to results/sample_custom_suffix.fastq (1000 reads)...
+            FASTQ complete: results/sample_custom_suffix.fastq
+            Done in 1.23 seconds.
         """
         print("Generating FASTQ with UMIs in header and barcodes as sequence...")
     
@@ -213,9 +344,27 @@ class UMIDeduplicator:
 
     @preprocess.time_it
     def generate_barcode_fasta_and_index(self, suffix = "_barcodes"):
-        """
-        Save all unique concatenated barcodes as a new table,
-        concatenating multiple columns with no separator.
+        """Generate FASTA reference of unique barcodes and create bowtie2 index.
+        Used for UMI-tools directional deduplication workflow to align reads to barcode sequences.
+        
+        Creates a FASTA file containing all unique concatenated barcode sequences
+        and builds a bowtie2 index for alignment. The FASTA file is removed after
+        indexing to save space.
+        
+        Args:
+            suffix (str, optional): Suffix for FASTA filename. Defaults to "_barcodes".
+            
+        Note:
+            Requires bowtie2 to be available via module system.
+            Uses 32 threads for index building (BOWTIE2_INDEX_BUILDER_THREADS).
+            
+        Example:
+            >>> dedup.generate_barcode_fasta_and_index("_ref")
+            Saving unique barcode(s) as reference file...
+            Creating table of unique concatenated barcodes: trebl_experiment_ADBC2_unique_barcodes
+            Writing FASTA to results/sample_ref.fa...
+            Indexing FASTA with bowtie2-build, prefix: results/sample_ref_index
+            Done in 5.67 seconds.
         """
         print("Saving unique barcode(s) as reference file...")
         
@@ -272,7 +421,37 @@ class UMIDeduplicator:
 
     @preprocess.time_it
     def align_sort_and_deduplicate_umis(self):
-
+        """Execute the complete UMI-tools alignment and deduplication pipeline.
+        
+        Runs the full UMI-tools workflow:
+        1. Aligns FASTQ to barcode reference using bowtie2
+        2. Converts SAM to BAM format
+        3. Sorts and indexes BAM file
+        4. Deduplicates UMIs using UMI-tools directional method
+        5. Generates final count table
+        6. Cleans up intermediate files
+        
+        Note:
+            Requires conda environment with umi_tools and system modules for
+            bowtie2 and samtools. Uses 32 threads for alignment and sorting.
+            Creates and executes a temporary bash script for the pipeline.
+            All intermediate files are automatically cleaned up.
+            
+        Raises:
+            subprocess.CalledProcessError: If any step in the pipeline fails.
+            
+        Example:
+            >>> dedup.align_sort_and_deduplicate_umis()
+            Aligning .FASTQ to reference .FA ...
+            Converting SAM -> BAM ...
+            Sorting BAM ...
+            Indexing BAM ...
+            Deduplicating UMIs ...
+            Saving final counts...
+            Cleaning up intermediate files...
+            UMI workflow complete!
+            Done in 5.23 minutes.
+        """
         if self.output_path:
             output_dir = self.output_path
             os.makedirs(output_dir, exist_ok=True)
@@ -333,13 +512,46 @@ class UMIDeduplicator:
         os.remove(script_path)
 
     def run_umi_tools_deduplication(self):
+        """Execute the complete UMI-tools deduplication workflow.
+        
+        Runs the full UMI-tools pipeline by calling:
+        1. generate_fastq() - Create FASTQ with UMIs in headers
+        2. generate_barcode_fasta_and_index() - Create reference and index
+        3. align_sort_and_deduplicate_umis() - Complete alignment and deduplication
+        
+        Note:
+            This is the comprehensive, slower method that uses UMI-tools
+            directional deduplication algorithm. Results in more accurate
+            deduplication compared to simple counting methods.
+            
+        Example:
+            >>> dedup.run_umi_tools_deduplication()
+            # Executes complete pipeline automatically
+        """
         self.generate_fastq()
         self.generate_barcode_fasta_and_index()
         self.align_sort_and_deduplicate_umis()
 
     def merge_complex_with_step1_map(self, save = True):
-        """
-        Merge the UMI-tools deduplicated counts CSV with the step1 map on barcode columns.
+        """Merge UMI-tools directional deduplication results with step1 mapping table.
+        
+        Reads the UMI-tools output TSV file and merges it with the step1 mapping
+        table on barcode columns. Renames columns to follow naming conventions.
+        
+        Args:
+            save (bool, optional): Whether to save merged results to CSV. 
+                Defaults to True.
+                
+        Returns:
+            pd.DataFrame: Merged DataFrame with directional UMI counts and 
+                step1 mapping information.
+                
+        Note:
+            Expects UMI-tools output file: {base}_directional_umi_counts.tsv
+            
+        Example:
+            >>> merged_df = dedup.merge_complex_with_step1_map(save=True)
+            Saved to results/sample_ADBC2_HawkBCs_umis_directional_deduplic_with_step1_map.csv
         """
         if self.output_path:
             output_dir = self.output_path
@@ -380,6 +592,37 @@ class UMIDeduplicator:
         return merged_df
     
     def run_both_deduplications(self):
+        """Execute both simple and UMI-tools deduplication methods and merge results.
+        
+        Runs both deduplication approaches:
+        1. Simple UMI counting (unique_umis_per_barcodes)
+        2. UMI-tools directional deduplication (run_umi_tools_deduplication)
+        
+        Then merges both results with the step1 mapping table if available.
+        
+        Returns:
+            pd.DataFrame or None: If step1_map_name is provided, returns merged
+                DataFrame with both deduplication results. Otherwise, saves
+                simple deduplication results only and returns None.
+                
+        Note:
+            This method provides comprehensive UMI analysis by comparing both
+            approaches. The merged output contains results from both methods
+            for comparison and validation.
+            Output filename: {base}_{barcode_cols}_umis_deduplic_with_step1_map.csv
+            
+        Example:
+            >>> merged_df = dedup.run_both_deduplications()
+            Starting simple deduplication.
+            Finished simple deduplication.
+            
+            Starting UMI Tools directional deduplication.
+            # ... UMI-tools pipeline output ...
+            Finished UMI Tools directional deduplication.
+            
+            Saved to results/sample_ADBC2_HawkBCs_umis_deduplic_with_step1_map.csv
+        """
+
         print("Starting simple deduplication.")
         self.unique_umis_per_barcodes()
         print("Finished simple deduplication.\n")
@@ -407,104 +650,3 @@ class UMIDeduplicator:
             # Need to save the simple deduplication result
             
 
-def run_fastp(input_dir, output_dir, script_path="../savio_jobs/fastp.sh"):
-    """
-    Run fastp on all .fastq.gz files in input_dir. Outputs as .fastq files.
-    Submit the existing fastp.sh script as a SLURM array job.
-    
-    Args:
-        input_dir (str): Path to folder containing .fastq.gz files
-        output_dir (str): Path to folder where output should be written
-        script_path (str): Path to the existing fastp.sh script
-    """
-    
-    # Resolve absolute paths
-    input_dir = os.path.abspath(input_dir)
-    output_dir = os.path.abspath(output_dir)
-    script_path = os.path.abspath(script_path)
-    
-    # Check that script exists
-    if not os.path.isfile(script_path):
-        raise FileNotFoundError(f"Script not found: {script_path}")
-    
-    # Grab all .fastq.gz files to determine array size
-    files = sorted([f for f in os.listdir(input_dir) if f.endswith(".fastq.gz")])
-    
-    if not files:
-        raise ValueError(f"No .fastq.gz files found in {input_dir}")
-    
-    array_range = f"1-{len(files)}"
-    
-    # Ensure output directory exists
-    os.makedirs(output_dir, exist_ok=True)
-    log_dir = os.path.join(output_dir, "logs")
-    os.makedirs(log_dir, exist_ok=True)
-    
-    # Submit the job with SLURM array option
-    submit_cmd = [
-        "sbatch",
-        f"--array={array_range}",
-        f"--output={log_dir}/fastp_%A_%a.out",
-        script_path,
-        input_dir,
-        output_dir
-    ]
-    
-    subprocess.run(submit_cmd)
-    print(f"Submitted SLURM array job for {len(files)} files using {script_path}.")
-
-
-def fastp_summary_df(output_dir):
-    log_dir = os.path.join(output_dir, "logs")
-    # List all .out files
-    log_files = [
-        f for f in os.listdir(log_dir)
-        if f.endswith(".out") and not f.lower().startswith("fastp")
-    ]
-    
-    # Prepare lists
-    samples = []
-    reads_passed = []
-    reads_filtered = []
-    
-    for f in tqdm(log_files):
-        path = os.path.join(log_dir, f)
-        with open(path) as fh:
-            text = fh.read()
-        
-        # Sample name (strip _fastp_report.out)
-        sample = f.replace("_fastp_report.out","")
-        
-        # Extract reads passed filter
-        match_passed = re.search(r"reads passed filter:\s+([\d,]+)", text)
-        match_failed_low = re.search(r"reads failed due to low quality:\s+([\d,]+)", text)
-        match_failed_N = re.search(r"reads failed due to too many N:\s+([\d,]+)", text)
-        match_failed_short = re.search(r"reads failed due to too short:\s+([\d,]+)", text)
-        
-        if match_passed:
-            passed = int(match_passed.group(1).replace(",",""))
-        else:
-            passed = 0
-        # Total filtered = sum of all failures
-        failed = 0
-        for m in [match_failed_low, match_failed_N, match_failed_short]:
-            if m:
-                failed += int(m.group(1).replace(",",""))
-        
-        samples.append(sample)
-        reads_passed.append(passed)
-        reads_filtered.append(failed)
-    
-    # Build dataframe
-    df = pd.DataFrame({
-        "sample": samples,
-        "reads_passed": reads_passed,
-        "reads_filtered": reads_filtered
-    })
-    
-    # Sort by total reads if you want
-    df["total_reads"] = df["reads_passed"] + df["reads_filtered"]
-    df = df.sort_values("total_reads", ascending=False)
-    df["filtered_percent"] = df["reads_filtered"] / (df["reads_passed"] + df["reads_filtered"]) * 100
-    df = df.reset_index(drop = True)
-    return df

@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=trebl_downsample
+#SBATCH --job-name=trebl_downsample_NKX2-2
 #SBATCH --account=fc_mvslab
 #SBATCH --partition=savio2
 #SBATCH --nodes=1
@@ -8,7 +8,7 @@
 #SBATCH --output=/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/notebooks/NKX2-2/logs/trebl_downsample_%A_%a.out
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=sanjana.kotha@berkeley.edu
-#SBATCH --array=0
+#SBATCH --array=0-115
 
 # -------------------------
 # Load conda and environment
@@ -21,8 +21,8 @@
 # -------------------------
 # Create array of FASTQ files
 # -------------------------
-FASTQ_FILES=(/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/data/NKX2-2_trebl_exp_chunks/AD_puro_only/*.fq.gz \
-             /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/data/NKX2-2_trebl_exp_chunks/RT_puro_only/*.fq.gz)
+FASTQ_FILES=(/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/data/NKX2-2_trebl_exp_chunks/AD_puro_only/*_part_{1..5}.fq.gz \
+             /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/data/NKX2-2_trebl_exp_chunks/RT_puro_only/*_part_{1..5}.fq.gz)
 
 echo "Found ${#FASTQ_FILES[@]} FASTQ files"
 echo "FASTQ_FILES: ${FASTQ_FILES[@]}"
