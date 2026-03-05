@@ -8,11 +8,11 @@
 #SBATCH --output=/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/notebooks/GCN4/logs/trebl_downsample_%A_%a.out
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=sanjana.kotha@berkeley.edu
-#SBATCH --array=0-29
+#SBATCH --array=30
 
 # Get the list of FASTQ files
 FASTQ_FILES=(
-    /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/data/GCN4_pool_C_UMI_RPTR_fastp/chunks/*{50,100,200}_chunks_part_{1..5}.fq.gz
+    /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/data/GCN4_pool_C_UMI_RPTR_fastp/chunks/*{400,600,800,1000}_chunks_part_{1..5}.fq.gz
 )
 
 # Get the file for this array task

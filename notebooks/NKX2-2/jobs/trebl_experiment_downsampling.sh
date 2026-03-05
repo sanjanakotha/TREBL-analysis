@@ -4,11 +4,11 @@
 #SBATCH --partition=savio2
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=24
-#SBATCH --time=3:00:00
+#SBATCH --time=00:05:00
 #SBATCH --output=/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/notebooks/NKX2-2/logs/trebl_downsample_%A_%a.out
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=sanjana.kotha@berkeley.edu
-#SBATCH --array=0-115
+#SBATCH --array=5,37
 
 # -------------------------
 # Load conda and environment
@@ -21,8 +21,10 @@
 # -------------------------
 # Create array of FASTQ files
 # -------------------------
-FASTQ_FILES=(/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/data/NKX2-2_trebl_exp_chunks/AD_puro_only/*_part_{1..5}.fq.gz \
-             /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/data/NKX2-2_trebl_exp_chunks/RT_puro_only/*_part_{1..5}.fq.gz)
+# FASTQ_FILES=(/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/data/NKX2-2_trebl_exp_chunks/AD_puro_only/*{50,100,200,400,600,800,1000}_chunks_part_{1..5}.fq.gz \
+#              /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/data/NKX2-2_trebl_exp_chunks/RT_puro_only/*{50,100,200,400,600,800,1000}_chunks_part_{1..5}.fq.gz)
+
+FASTQ_FILES=(/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/data/NKX2-2_trebl_exp_chunks/RT_puro_only/*{50,100,200,400,600,800,1000}_chunks_part_{1..5}.fq.gz)
 
 echo "Found ${#FASTQ_FILES[@]} FASTQ files"
 echo "FASTQ_FILES: ${FASTQ_FILES[@]}"

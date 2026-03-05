@@ -10,11 +10,18 @@ import glob
 from tqdm import tqdm
 import os
 import argparse
+import re
 
-# Add TREBL scripts to path
-sys.path.append("/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/")
-from scripts import initial_map, map_refiner, complexity, finder, preprocess, error_correct, plotting, umi_deduplicate
-
+from trebl_tools import (
+    initial_map,
+    map_refiner,
+    complexity,
+    finder,
+    preprocess,
+    error_correct,
+    plotting,
+    umi_deduplicate,
+)
 print("Done with imports", flush=True)
 
 # Argument parsing
@@ -30,7 +37,11 @@ print(f"Output path: {yeast_pool_C_umi_output_path}", flush=True)
 
 # Create per-file DB path
 base_name = os.path.basename(file_path)
-name_only = base_name.split('.')[0]
+
+# Sanitize filename for DB / folder names
+name_only = re.sub(r'\.fastq\.gz$|\.fq\.gz$|\.fq$|\.gz$', '', base_name)  # remove extensions
+name_only = re.sub(r'[^\w]+', '_', name_only)  # replace dots, dashes, spaces with underscores
+
 db_dir = "/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/duckdb/GCN4_downsampling"
 os.makedirs(db_dir, exist_ok=True)
 db_path = os.path.join(db_dir, f"{name_only}.db")
@@ -59,7 +70,6 @@ umi_mapper = initial_map.InitialMapper(
 umi_mapper.create_map()
 
 # Refinement
-
 figures_path = os.path.join(yeast_pool_C_umi_output_path, "figures", name_only)
 os.makedirs(figures_path, exist_ok=True)
 
