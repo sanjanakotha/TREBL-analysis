@@ -594,7 +594,6 @@ class TreblPipeline:
             name = f"_{name}"
         return name
     
-
     def _run_trebl_experiment_helper(
         self,
         seq_files,
@@ -606,49 +605,17 @@ class TreblPipeline:
         count_col_name=None,
         gene_col_name=None,
         concat_gene=False,
-        umi_deduplication='both'
+        umi_deduplication='both',
+        output_file=None  # new: final CSV path
     ):
         """
-        Core TREBL experiment runner.
-
-        Handles both UMI and non-UMI workflows. If a UMI object is provided,
-        UMI-based deduplication is applied. The workflow supports two deduplication
-        modes: 'simple' (single-step deduplication) or 'both' (simple + directional/complex deduplication).
-
-        Args:
-            seq_files (list[str]): FASTQ file paths to process.
-            bc_objects (list): Barcode objects describing library barcodes.
-            reverse_complement (bool): Whether to reverse complement reads before processing.
-            reads_threshold (int, optional): Minimum reads per barcode/UMI to retain. Defaults to 1.
-            umi_object (optional): UMI configuration object. If provided, triggers UMI-based workflow.
-            step_name_suffix (str, optional): Suffix appended to DuckDB step names. Defaults to "".
-            count_col_name (str, optional): Column name for UMI counts in final merged results.
-            gene_col_name (str, optional): Column name for gene/barcode identifiers.
-            concat_gene (bool, optional): If True, concatenates barcode columns to form gene identifiers. Defaults to False.
-            umi_deduplication (str, optional): Deduplication mode. Options:
-                - 'simple': Only simple UMI deduplication.
-                - 'both' (default): Runs both simple and directional/complex deduplication.
-
-        Returns:
-            pd.DataFrame: Aggregated experiment results.
-                - If UMI workflow: Merged DataFrame containing both "simple" and "complex" UMI counts.
-                - If non-UMI workflow: Barcode-level counts for the experiment.
-
-        Notes:
-            - When `umi_object` is provided, directional/complex UMI counts are stored in 
-            "{output_path}/{sample}_directional_umi_counts.tsv" and simple UMI counts in 
-            "{output_path}/{sample}_simple_umi_counts.tsv".
-            - Deduplicator also outputs reads-per-UMI summary files for quality control.
-            - Non-UMI workflow skips UMI deduplication and uses barcode grouping and thresholding.
-            - Error correction steps (if enabled) are applied before deduplication.
+        Memory-efficient TREBL experiment runner.
+        Writes per-file results directly to CSV without keeping large DataFrames in memory.
         """
-        
-        step_name_prefix = "trebl_experiment_" + step_name_suffix
-        
-        results = []
-        simple_results = []
     
-        for file_path in seq_files:
+        step_name_prefix = "trebl_experiment_" + step_name_suffix
+    
+        for i, file_path in enumerate(seq_files):
             base_name = os.path.basename(file_path)
             name_only = base_name.split('.')[0]
             name_only = self._duckdb_safe_name(name_only)
@@ -678,8 +645,7 @@ class TreblPipeline:
             manual_ec_threshold = not (self.error_correction and reads_threshold == 1)
             map_order = ["quality", "error_corrected"] if self.error_correction else ["quality"]
             if not umi_object:
-                # non-UMI workflow adds additional steps
-                map_order = map_order + (["grouped", "thresholded", "designed"] if not self.error_correction else ["grouped", "thresholded", "designed"])
+                map_order += ["grouped", "thresholded", "designed"] if not self.error_correction else ["grouped", "thresholded", "designed"]
     
             refiner = map_refiner.MapRefiner(
                 db_path=self.db_path,
@@ -697,7 +663,6 @@ class TreblPipeline:
                 refiner.plot_error_correction()
     
             if umi_object:
-                # Deduplication
                 refined_map_suffix = "error_corrected" if self.error_correction else "quality"
                 deduplicator = umi_deduplicate.UMIDeduplicator(
                     db_path=self.db_path,
@@ -709,75 +674,43 @@ class TreblPipeline:
                     output_path=output_dir,
                     refined_map_suffix=refined_map_suffix,
                 )
-                
+    
                 if umi_deduplication == 'simple':
                     deduplicator.run_simple_deduplication()
                     deduplicator.save_simple_deduplication()
                 else:
                     deduplicator.run_both_deduplications()
-
-                    # Load results
-                    complex_df = pd.read_csv(output_dir / f"{name_only}_directional_umi_counts.tsv", sep="\t")
-                    complex_df["name"] = name_only
-                    results.append(complex_df)
-
+    
+                # Process simple results
                 simple_df = pd.read_csv(output_dir / f"{name_only}_simple_umi_counts.tsv", sep="\t")
                 simple_df["name"] = name_only
-                simple_results.append(simple_df)
-
+                if concat_gene:
+                    concat_cols = [bc.name for bc in bc_objects]
+                    simple_df[gene_col_name] = simple_df[concat_cols].agg("".join, axis=1)
+    
+                # Save/appending to final CSV
+                if output_file:
+                    mode = "w" if i == 0 else "a"
+                    header = True if i == 0 else False
+                    simple_df.to_csv(output_file, sep="\t", index=False, mode=mode, header=header)
+    
                 # Reads per UMI
                 one_file_reads_per_UMI = deduplicator.counts_per_umi()
                 one_file_reads_per_UMI["name"] = name_only
                 one_file_reads_per_UMI.to_csv(output_dir / f"{name_only}_reads_per_umi.tsv", sep="\t")
-
-        # Merge results
-        if umi_object:
-            # Merge results safely for both simple and complex dedup
-            
-            # Complex DF may be empty if only simple dedup was run
-            if results:
-                complex_df = pd.concat(results, ignore_index=True).rename(
-                    columns={"count": count_col_name, "gene": gene_col_name}
-                )
+    
             else:
-                complex_df = pd.DataFrame(columns=[gene_col_name, count_col_name, "name"])
-            
-            # Simple DF should always exist
-            simple_df = pd.concat(simple_results, ignore_index=True).rename(
-                columns={"count": count_col_name}
-            )
-            
-            # Concatenate barcode columns if requested
-            if concat_gene:
-                concat_cols = [bc.name for bc in bc_objects]
-                simple_df[gene_col_name] = simple_df[concat_cols].agg("".join, axis=1)
-            
-            # Merge simple and complex DFs
-            if not complex_df.empty:
-                merged = pd.merge(
-                    complex_df,
-                    simple_df,
-                    on=[gene_col_name, "name"],
-                    suffixes=("_complex", "_simple"),
-                    how="outer"
-                )
-            else:
-                # If no complex DF, just return simple_df with renamed columns
-                merged = simple_df.copy()
-                merged = merged.rename(columns={count_col_name: f"{count_col_name}_simple"})
-            
-            return merged
-        else:
-             # Non-UMI workflow: grab all relevant tables
-            tables = refiner.show_tables()
-            first_bc_name = bc_objects[0].name
-            for table in tables:
-                if step_name_prefix in table[0] and first_bc_name in table[0]:
-                    df = refiner.get_map_df(table[0])
-                    df["sample"] = table[0][len(step_name_prefix):]
-                    results.append(df)
-
-            return pd.concat(results, ignore_index=True)
+                # Non-UMI workflow: write each table directly to CSV
+                tables = refiner.show_tables()
+                first_bc_name = bc_objects[0].name
+                for table in tables:
+                    if step_name_prefix in table[0] and first_bc_name in table[0]:
+                        df = refiner.get_map_df(table[0])
+                        df["sample"] = table[0][len(step_name_prefix):]
+                        if output_file:
+                            mode = "w" if i == 0 else "a"
+                            header = True if i == 0 else False
+                            df.to_csv(output_file, sep="\t", index=False, mode=mode, header=header)
 
     def trebl_experiment_analysis(
         self,
@@ -795,46 +728,12 @@ class TreblPipeline:
         umi_deduplication='both'
     ):
         """
-        Run TREBL experiment analysis for both AD and RT libraries.
-
-        The workflow automatically selects between a UMI or non-UMI
-        pipeline depending on whether a UMI object is provided. If UMI deduplication
-        is enabled, results from simple and/or directional/complex deduplication are merged.
-
-        Args:
-            AD_seq_files (list[str]): Paths to FASTQ files for AD library reads.
-            AD_bc_objects (list): Barcode objects for AD library extraction.
-            RT_seq_files (list[str]): Paths to FASTQ files for reporter (RT) reads.
-            RT_bc_objects (list): Barcode objects for reporter library extraction.
-            reverse_complement (bool): Whether reads should be reverse complemented prior to barcode extraction.
-            step1_map_csv_path (str, optional): Path to Step 1 map CSV for computing overlap plots.
-            AD_umi_object (optional): UMI object for AD library. If provided, triggers UMI deduplication.
-            RT_umi_object (optional): UMI object for RT library. If provided, triggers UMI deduplication.
-            reads_threshold_AD (int, optional): Minimum reads per AD barcode to retain. Defaults to 1.
-            reads_threshold_RT (int, optional): Minimum reads per RT barcode to retain. Defaults to 1.
-            step_name_suffix (str, optional): Suffix for DuckDB table and output names.
-            umi_deduplication (str, optional): Deduplication mode for both AD and RT libraries.
-                Options:
-                    - 'simple': Only simple UMI deduplication is applied.
-                    - 'both' (default): Both simple and directional/complex deduplication are performed.
-
-        Returns:
-            dict: Dictionary containing final TREBL experiment results:
-                - "AD_results" (pd.DataFrame): AD library results with merged UMI counts if UMI workflow.
-                - "RT_results" (pd.DataFrame): RT library results with merged UMI counts if UMI workflow.
-
-        Notes:
-            - UMI-based workflows produce two count tables per sample: 
-            simple UMI counts and directional/complex UMI counts. These are merged in the final output.
-            - Non-UMI workflows return barcode counts after grouping, thresholding, and optional error correction.
-            - If `output_path` is set, results are saved as CSV:
-                "{output_path}/AD_trebl_experiment_results.csv" and
-                "{output_path}/RT_trebl_experiment_results.csv".
-            - Barcode quality/loss plots are generated for both AD and RT libraries.
+        Memory-efficient TREBL experiment analysis.
+        Writes final CSVs directly to disk. Does not return DataFrames.
         """
-        
+    
         step_name_prefix = "trebl_experiment_" + step_name_suffix
-        
+    
         experiments = {
             "AD": {
                 "seq_files": AD_seq_files,
@@ -844,8 +743,8 @@ class TreblPipeline:
                 "count_col_name": "AD_umi_count",
                 "gene_col_name": "AD_ADBC_concat",
                 "concat_gene": True,
-                "output_file": "ADBC_trebl_experiment_results.csv",
-                "umi_deduplication" : umi_deduplication
+                "output_file": self.output_path / "ADBC_trebl_experiment_results.csv",
+                "umi_deduplication": umi_deduplication
             },
             "RT": {
                 "seq_files": RT_seq_files,
@@ -855,15 +754,13 @@ class TreblPipeline:
                 "count_col_name": "RTBC_umi_count",
                 "gene_col_name": "RTBC",
                 "concat_gene": False,
-                "output_file": "RTBC_trebl_experiment_results.csv",
+                "output_file": self.output_path / "RTBC_trebl_experiment_results.csv",
                 "umi_deduplication": umi_deduplication
             },
         }
-
-        results = {}
-
+    
         for name, spec in experiments.items():
-            df = self._run_trebl_experiment_helper(
+            self._run_trebl_experiment_helper(
                 seq_files=spec["seq_files"],
                 bc_objects=spec["bc_objects"],
                 reverse_complement=reverse_complement,
@@ -873,36 +770,330 @@ class TreblPipeline:
                 gene_col_name=spec.get("gene_col_name"),
                 concat_gene=spec.get("concat_gene", False),
                 step_name_suffix=step_name_suffix,
-                umi_deduplication=spec["umi_deduplication"]
+                umi_deduplication=spec["umi_deduplication"],
+                output_file=spec["output_file"]
             )
-
-            if self.output_path:
-                df.to_csv(self.output_path / f"{name}_trebl_experiment_results.csv", index=False)
-
-            results[f"{name}_results"] = df
-
+    
         if step1_map_csv_path:
-            # Load Step 1 map CSV into DuckDB as a temporary table
             step1_map_name = "step1_map_temp"
             self.con.execute(f"DROP TABLE IF EXISTS {step1_map_name}")
             self.con.execute(f"""
                 CREATE TABLE {step1_map_name} AS
                 SELECT * FROM read_csv_auto('{step1_map_csv_path}')
             """)
+    
+            self.plot_trebl_experiment_loss(AD_bc_objects, step1_map_name, step_name_prefix=step_name_prefix)
+            self.plot_trebl_experiment_loss(RT_bc_objects, step1_map_name, step_name_prefix=step_name_prefix)
 
-            # Plot loss for AD and RT
-            self.plot_trebl_experiment_loss(
-                AD_bc_objects, 
-                step1_map_name, 
-                step_name_prefix=step_name_prefix
-            )
-            self.plot_trebl_experiment_loss(
-                RT_bc_objects, 
-                step1_map_name, 
-                step_name_prefix=step_name_prefix
-            )
+    
+    # def _run_trebl_experiment_helper(
+    #     self,
+    #     seq_files,
+    #     bc_objects,
+    #     reverse_complement,
+    #     reads_threshold=1,
+    #     umi_object=None,
+    #     step_name_suffix="",
+    #     count_col_name=None,
+    #     gene_col_name=None,
+    #     concat_gene=False,
+    #     umi_deduplication='both'
+    # ):
+    #     """
+    #     Core TREBL experiment runner.
+
+    #     Handles both UMI and non-UMI workflows. If a UMI object is provided,
+    #     UMI-based deduplication is applied. The workflow supports two deduplication
+    #     modes: 'simple' (single-step deduplication) or 'both' (simple + directional/complex deduplication).
+
+    #     Args:
+    #         seq_files (list[str]): FASTQ file paths to process.
+    #         bc_objects (list): Barcode objects describing library barcodes.
+    #         reverse_complement (bool): Whether to reverse complement reads before processing.
+    #         reads_threshold (int, optional): Minimum reads per barcode/UMI to retain. Defaults to 1.
+    #         umi_object (optional): UMI configuration object. If provided, triggers UMI-based workflow.
+    #         step_name_suffix (str, optional): Suffix appended to DuckDB step names. Defaults to "".
+    #         count_col_name (str, optional): Column name for UMI counts in final merged results.
+    #         gene_col_name (str, optional): Column name for gene/barcode identifiers.
+    #         concat_gene (bool, optional): If True, concatenates barcode columns to form gene identifiers. Defaults to False.
+    #         umi_deduplication (str, optional): Deduplication mode. Options:
+    #             - 'simple': Only simple UMI deduplication.
+    #             - 'both' (default): Runs both simple and directional/complex deduplication.
+
+    #     Returns:
+    #         pd.DataFrame: Aggregated experiment results.
+    #             - If UMI workflow: Merged DataFrame containing both "simple" and "complex" UMI counts.
+    #             - If non-UMI workflow: Barcode-level counts for the experiment.
+
+    #     Notes:
+    #         - When `umi_object` is provided, directional/complex UMI counts are stored in 
+    #         "{output_path}/{sample}_directional_umi_counts.tsv" and simple UMI counts in 
+    #         "{output_path}/{sample}_simple_umi_counts.tsv".
+    #         - Deduplicator also outputs reads-per-UMI summary files for quality control.
+    #         - Non-UMI workflow skips UMI deduplication and uses barcode grouping and thresholding.
+    #         - Error correction steps (if enabled) are applied before deduplication.
+    #     """
         
-        return results
+    #     step_name_prefix = "trebl_experiment_" + step_name_suffix
+        
+    #     results = []
+    #     simple_results = []
+    
+    #     for file_path in seq_files:
+    #         base_name = os.path.basename(file_path)
+    #         name_only = base_name.split('.')[0]
+    #         name_only = self._duckdb_safe_name(name_only)
+    #         step_name = f"{step_name_prefix}{name_only}"
+    
+    #         output_dir = self.output_path / step_name
+    #         output_dir.mkdir(parents=True, exist_ok=True)
+    
+    #         design_file_path = self.design_file_path if "AD" in [bc.name for bc in bc_objects] else None
+    
+    #         # Initial mapping
+    #         mapper_kwargs = dict(
+    #             db_path=self.db_path,
+    #             step_name=step_name,
+    #             seq_file=file_path,
+    #             bc_objects=bc_objects,
+    #             reverse_complement=reverse_complement,
+    #             design_file_path=design_file_path
+    #         )
+    #         if umi_object:
+    #             mapper_kwargs["umi_object"] = umi_object
+    
+    #         mapper = initial_map.InitialMapper(**mapper_kwargs)
+    #         mapper.create_map()
+    
+    #         # Refinement
+    #         manual_ec_threshold = not (self.error_correction and reads_threshold == 1)
+    #         map_order = ["quality", "error_corrected"] if self.error_correction else ["quality"]
+    #         if not umi_object:
+    #             # non-UMI workflow adds additional steps
+    #             map_order = map_order + (["grouped", "thresholded", "designed"] if not self.error_correction else ["grouped", "thresholded", "designed"])
+    
+    #         refiner = map_refiner.MapRefiner(
+    #             db_path=self.db_path,
+    #             bc_objects=bc_objects,
+    #             column_pairs=[],
+    #             reads_threshold=reads_threshold,
+    #             map_order=map_order,
+    #             step_name=step_name,
+    #             output_figures_path=output_dir,
+    #             manual_ec_threshold=manual_ec_threshold,
+    #         )
+    #         refiner.refine_map_from_db()
+    #         refiner.plot_loss()
+    #         if self.error_correction:
+    #             refiner.plot_error_correction()
+    
+    #         if umi_object:
+    #             # Deduplication
+    #             refined_map_suffix = "error_corrected" if self.error_correction else "quality"
+    #             deduplicator = umi_deduplicate.UMIDeduplicator(
+    #                 db_path=self.db_path,
+    #                 bc_objects=bc_objects,
+    #                 step_name=step_name,
+    #                 descriptor="",
+    #                 step1_map_name=None,
+    #                 fastq_path=file_path,
+    #                 output_path=output_dir,
+    #                 refined_map_suffix=refined_map_suffix,
+    #             )
+                
+    #             if umi_deduplication == 'simple':
+    #                 deduplicator.run_simple_deduplication()
+    #                 deduplicator.save_simple_deduplication()
+    #             else:
+    #                 deduplicator.run_both_deduplications()
+
+    #                 # Load results
+    #                 complex_df = pd.read_csv(output_dir / f"{name_only}_directional_umi_counts.tsv", sep="\t")
+    #                 complex_df["name"] = name_only
+    #                 results.append(complex_df)
+
+    #             simple_df = pd.read_csv(output_dir / f"{name_only}_simple_umi_counts.tsv", sep="\t")
+    #             simple_df["name"] = name_only
+    #             simple_results.append(simple_df)
+
+    #             # Reads per UMI
+    #             one_file_reads_per_UMI = deduplicator.counts_per_umi()
+    #             one_file_reads_per_UMI["name"] = name_only
+    #             one_file_reads_per_UMI.to_csv(output_dir / f"{name_only}_reads_per_umi.tsv", sep="\t")
+
+    #     # Merge results
+    #     if umi_object:
+    #         # Merge results safely for both simple and complex dedup
+            
+    #         # Complex DF may be empty if only simple dedup was run
+    #         if results:
+    #             complex_df = pd.concat(results, ignore_index=True).rename(
+    #                 columns={"count": count_col_name, "gene": gene_col_name}
+    #             )
+    #         else:
+    #             complex_df = pd.DataFrame(columns=[gene_col_name, count_col_name, "name"])
+            
+    #         # Simple DF should always exist
+    #         simple_df = pd.concat(simple_results, ignore_index=True).rename(
+    #             columns={"count": count_col_name}
+    #         )
+            
+    #         # Concatenate barcode columns if requested
+    #         if concat_gene:
+    #             concat_cols = [bc.name for bc in bc_objects]
+    #             simple_df[gene_col_name] = simple_df[concat_cols].agg("".join, axis=1)
+            
+    #         # Merge simple and complex DFs
+    #         if not complex_df.empty:
+    #             merged = pd.merge(
+    #                 complex_df,
+    #                 simple_df,
+    #                 on=[gene_col_name, "name"],
+    #                 suffixes=("_complex", "_simple"),
+    #                 how="outer"
+    #             )
+    #         else:
+    #             # If no complex DF, just return simple_df with renamed columns
+    #             merged = simple_df.copy()
+    #             merged = merged.rename(columns={count_col_name: f"{count_col_name}_simple"})
+            
+    #         return merged
+    #     else:
+    #          # Non-UMI workflow: grab all relevant tables
+    #         tables = refiner.show_tables()
+    #         first_bc_name = bc_objects[0].name
+    #         for table in tables:
+    #             if step_name_prefix in table[0] and first_bc_name in table[0]:
+    #                 df = refiner.get_map_df(table[0])
+    #                 df["sample"] = table[0][len(step_name_prefix):]
+    #                 results.append(df)
+
+    #         return pd.concat(results, ignore_index=True)
+
+    # def trebl_experiment_analysis(
+    #     self,
+    #     AD_seq_files,
+    #     AD_bc_objects,
+    #     RT_seq_files,
+    #     RT_bc_objects,
+    #     reverse_complement,
+    #     step1_map_csv_path=None,
+    #     AD_umi_object=None,
+    #     RT_umi_object=None,
+    #     reads_threshold_AD=1,
+    #     reads_threshold_RT=1,
+    #     step_name_suffix="",
+    #     umi_deduplication='both'
+    # ):
+    #     """
+    #     Run TREBL experiment analysis for both AD and RT libraries.
+
+    #     The workflow automatically selects between a UMI or non-UMI
+    #     pipeline depending on whether a UMI object is provided. If UMI deduplication
+    #     is enabled, results from simple and/or directional/complex deduplication are merged.
+
+    #     Args:
+    #         AD_seq_files (list[str]): Paths to FASTQ files for AD library reads.
+    #         AD_bc_objects (list): Barcode objects for AD library extraction.
+    #         RT_seq_files (list[str]): Paths to FASTQ files for reporter (RT) reads.
+    #         RT_bc_objects (list): Barcode objects for reporter library extraction.
+    #         reverse_complement (bool): Whether reads should be reverse complemented prior to barcode extraction.
+    #         step1_map_csv_path (str, optional): Path to Step 1 map CSV for computing overlap plots.
+    #         AD_umi_object (optional): UMI object for AD library. If provided, triggers UMI deduplication.
+    #         RT_umi_object (optional): UMI object for RT library. If provided, triggers UMI deduplication.
+    #         reads_threshold_AD (int, optional): Minimum reads per AD barcode to retain. Defaults to 1.
+    #         reads_threshold_RT (int, optional): Minimum reads per RT barcode to retain. Defaults to 1.
+    #         step_name_suffix (str, optional): Suffix for DuckDB table and output names.
+    #         umi_deduplication (str, optional): Deduplication mode for both AD and RT libraries.
+    #             Options:
+    #                 - 'simple': Only simple UMI deduplication is applied.
+    #                 - 'both' (default): Both simple and directional/complex deduplication are performed.
+
+    #     Returns:
+    #         dict: Dictionary containing final TREBL experiment results:
+    #             - "AD_results" (pd.DataFrame): AD library results with merged UMI counts if UMI workflow.
+    #             - "RT_results" (pd.DataFrame): RT library results with merged UMI counts if UMI workflow.
+
+    #     Notes:
+    #         - UMI-based workflows produce two count tables per sample: 
+    #         simple UMI counts and directional/complex UMI counts. These are merged in the final output.
+    #         - Non-UMI workflows return barcode counts after grouping, thresholding, and optional error correction.
+    #         - If `output_path` is set, results are saved as CSV:
+    #             "{output_path}/AD_trebl_experiment_results.csv" and
+    #             "{output_path}/RT_trebl_experiment_results.csv".
+    #         - Barcode quality/loss plots are generated for both AD and RT libraries.
+    #     """
+        
+    #     step_name_prefix = "trebl_experiment_" + step_name_suffix
+        
+    #     experiments = {
+    #         "AD": {
+    #             "seq_files": AD_seq_files,
+    #             "bc_objects": AD_bc_objects,
+    #             "umi_object": AD_umi_object,
+    #             "reads_threshold": reads_threshold_AD,
+    #             "count_col_name": "AD_umi_count",
+    #             "gene_col_name": "AD_ADBC_concat",
+    #             "concat_gene": True,
+    #             "output_file": "ADBC_trebl_experiment_results.csv",
+    #             "umi_deduplication" : umi_deduplication
+    #         },
+    #         "RT": {
+    #             "seq_files": RT_seq_files,
+    #             "bc_objects": RT_bc_objects,
+    #             "umi_object": RT_umi_object,
+    #             "reads_threshold": reads_threshold_RT,
+    #             "count_col_name": "RTBC_umi_count",
+    #             "gene_col_name": "RTBC",
+    #             "concat_gene": False,
+    #             "output_file": "RTBC_trebl_experiment_results.csv",
+    #             "umi_deduplication": umi_deduplication
+    #         },
+    #     }
+
+    #     results = {}
+
+    #     for name, spec in experiments.items():
+    #         df = self._run_trebl_experiment_helper(
+    #             seq_files=spec["seq_files"],
+    #             bc_objects=spec["bc_objects"],
+    #             reverse_complement=reverse_complement,
+    #             reads_threshold=spec["reads_threshold"],
+    #             umi_object=spec["umi_object"],
+    #             count_col_name=spec.get("count_col_name"),
+    #             gene_col_name=spec.get("gene_col_name"),
+    #             concat_gene=spec.get("concat_gene", False),
+    #             step_name_suffix=step_name_suffix,
+    #             umi_deduplication=spec["umi_deduplication"]
+    #         )
+
+    #         if self.output_path:
+    #             df.to_csv(self.output_path / f"{name}_trebl_experiment_results.csv", index=False)
+
+    #         results[f"{name}_results"] = df
+
+    #     if step1_map_csv_path:
+    #         # Load Step 1 map CSV into DuckDB as a temporary table
+    #         step1_map_name = "step1_map_temp"
+    #         self.con.execute(f"DROP TABLE IF EXISTS {step1_map_name}")
+    #         self.con.execute(f"""
+    #             CREATE TABLE {step1_map_name} AS
+    #             SELECT * FROM read_csv_auto('{step1_map_csv_path}')
+    #         """)
+
+    #         # Plot loss for AD and RT
+    #         self.plot_trebl_experiment_loss(
+    #             AD_bc_objects, 
+    #             step1_map_name, 
+    #             step_name_prefix=step_name_prefix
+    #         )
+    #         self.plot_trebl_experiment_loss(
+    #             RT_bc_objects, 
+    #             step1_map_name, 
+    #             step_name_prefix=step_name_prefix
+    #         )
+        
+    #     return results
 
     def plot_trebl_experiment_loss(self, bc_objects, step1_map_name=None, step_name_prefix="trebl_experiment_"):
         """

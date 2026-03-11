@@ -80,9 +80,19 @@ def build_loss_table_dict(prefixes, con, step1_table="step1_AD_AD_BC_RPTR_BC_des
     """
     Build loss tables with an additional Step1 row summarizing how many reads
     and unique constructs appear in the Step1 design table.
-    """
 
+    step1_table: either a DuckDB table name or a CSV file path
+    """
     loss_table_df_dict = {}
+
+    # If step1_table is a CSV, load it as a temporary table in DuckDB
+    if isinstance(step1_table, str) and step1_table.endswith(".csv"):
+        print('registering temp step1')
+        step1_df = pd.read_csv(step1_table)
+        con.register("step1_temp", step1_df)
+        step1_table_name = "step1_temp"
+    else:
+        step1_table_name = step1_table
 
     for table in tqdm.tqdm(prefixes):
 
@@ -116,7 +126,7 @@ def build_loss_table_dict(prefixes, con, step1_table="step1_AD_AD_BC_RPTR_BC_des
                 {read_expr} AS total_reads,
                 {distinct_expr} AS unique_count
             FROM {file_name} AS m
-            JOIN {step1_table} AS s
+            JOIN {step1_table_name} AS s
               ON {join_condition}
         """).fetchone()
 

@@ -1,0 +1,2139 @@
+Starting step1 analysis
+  File "/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/notebooks/GCN4/pipeline_analysis/01_step1.py", line 7
+    output_path = "../../../output/GCN4_pipeline"s
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+SyntaxError: invalid syntax. Perhaps you forgot a comma?
+Starting step2 analysis
+Reading 2 FASTQ/TXT file(s)...
+Done in 3.82 seconds.
+
+Reverse complement of sequences...
+Done in 2.21 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 4.31 seconds.
+
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 2.10 seconds.
+
+Mapping complete.
+Reading 4 FASTQ/TXT file(s)...
+Done in 5.93 seconds.
+
+Reverse complement of sequences...
+Done in 3.19 seconds.
+
+Extracting 1 barcodes...
+False
+CTCGAG
+
+RPTR_BC: extracting 14 bases after preceder 'CTCGAG'
+Done in 0.42 seconds.
+
+Done in 0.00 seconds.
+
+Done in 0.74 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): step2_AD_AD_BC_
+Full prefix for this instance: step2_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. grouped
+3. thresholded
+4. barcode_exists
+5. quality
+6. designed
+
+Base prefix (stable across descriptors): step2_RPTR_BC_
+Full prefix for this instance: step2_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. grouped
+3. thresholded
+4. barcode_exists
+5. quality
+6. designed
+
+Grouping step2_AD_AD_BC_initial...
+Done in 2.03 seconds.
+
+Thresholding...
+Using reads threshold of 10.
+Done in 0.67 seconds.
+
+Removing rows with null or empty barcodes (excluding AD)...
+Done in 0.08 seconds.
+
+
+Filtering to high-quality reads...
+Created table: step2_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 0.02 seconds.
+
+
+Filtering to designed sequences...
+Created table: step2_AD_AD_BC_designed — kept only Designed == 1.
+Done in 0.01 seconds.
+
+Done.
+Saved loss summary table as 'step2_AD_AD_BC_loss_summary'
+Done in 0.57 seconds.
+
+Grouping step2_RPTR_BC_initial...
+Done in 0.63 seconds.
+
+Thresholding...
+Using reads threshold of 10.
+Done in 0.53 seconds.
+
+Removing rows with null or empty barcodes (excluding AD)...
+Done in 0.02 seconds.
+
+
+Filtering to high-quality reads...
+Created table: step2_RPTR_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 0.02 seconds.
+
+
+Filtering to designed sequences...
+Created table: step2_RPTR_BC_designed — kept only Designed == 1.
+Done in 0.01 seconds.
+
+Done.
+Saved loss summary table as 'step2_RPTR_BC_loss_summary'
+Done in 0.02 seconds.
+
+Starting yeast pool A analysis
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.17 seconds.
+
+Reverse complement of sequences...
+Done in 1.68 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 1.07 seconds.
+
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 1.26 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_A_Staller_AD_3_10_1_MVS_0075_I1_MVS_0075_I2_CTGTCCACAC_CACTGTATAG_S22_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_A_Staller_AD_3_10_1_MVS_0075_I1_MVS_0075_I2_CTGTCCACAC_CACTGTATAG_S22_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_A_Staller_AD_3_10_1_MVS_0075_I1_MVS_0075_I2_CTGTCCACAC_CACTGTATAG_S22_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 0.37 seconds.
+
+Grouping trebl_experiment_pool_A_Staller_AD_3_10_1_MVS_0075_I1_MVS_0075_I2_CTGTCCACAC_CACTGTATAG_S22_AD_AD_BC_quality...
+Done in 1.20 seconds.
+
+Thresholding...
+Using reads threshold of 10.
+Done in 0.60 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_A_Staller_AD_3_10_1_MVS_0075_I1_MVS_0075_I2_CTGTCCACAC_CACTGTATAG_S22_AD_AD_BC_loss_summary'
+Done in 0.11 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.13 seconds.
+
+Reverse complement of sequences...
+Done in 1.75 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 2.55 seconds.
+
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 0.96 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_A_Staller_AD_3_5_2_MVS_0074_I1_MVS_0074_I2_GTATTCACAG_GCTTATGAGA_S21_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_A_Staller_AD_3_5_2_MVS_0074_I1_MVS_0074_I2_GTATTCACAG_GCTTATGAGA_S21_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_A_Staller_AD_3_5_2_MVS_0074_I1_MVS_0074_I2_GTATTCACAG_GCTTATGAGA_S21_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 0.33 seconds.
+
+Grouping trebl_experiment_pool_A_Staller_AD_3_5_2_MVS_0074_I1_MVS_0074_I2_GTATTCACAG_GCTTATGAGA_S21_AD_AD_BC_quality...
+Done in 0.70 seconds.
+
+Thresholding...
+Using reads threshold of 10.
+Done in 0.52 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_A_Staller_AD_3_5_2_MVS_0074_I1_MVS_0074_I2_GTATTCACAG_GCTTATGAGA_S21_AD_AD_BC_loss_summary'
+Done in 0.09 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.22 seconds.
+
+Reverse complement of sequences...
+Done in 1.78 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 1.20 seconds.
+
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 1.19 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_A_Staller_AD_3_240_1_50p_MVS_0071_I1_MVS_0071_I2_TTCAATACGC_CTTGCACGAG_S18_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_A_Staller_AD_3_240_1_50p_MVS_0071_I1_MVS_0071_I2_TTCAATACGC_CTTGCACGAG_S18_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_A_Staller_AD_3_240_1_50p_MVS_0071_I1_MVS_0071_I2_TTCAATACGC_CTTGCACGAG_S18_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 0.52 seconds.
+
+Grouping trebl_experiment_pool_A_Staller_AD_3_240_1_50p_MVS_0071_I1_MVS_0071_I2_TTCAATACGC_CTTGCACGAG_S18_AD_AD_BC_quality...
+Done in 0.70 seconds.
+
+Thresholding...
+Using reads threshold of 10.
+Done in 0.46 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_A_Staller_AD_3_240_1_50p_MVS_0071_I1_MVS_0071_I2_TTCAATACGC_CTTGCACGAG_S18_AD_AD_BC_loss_summary'
+Done in 0.10 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 0.72 seconds.
+
+Reverse complement of sequences...
+Done in 1.59 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 1.02 seconds.
+
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 0.98 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_A_Staller_AD_3_0_2_MVS_0073_I1_MVS_0073_I2_GCTCCTGATG_AGGTCGTGTC_S20_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_A_Staller_AD_3_0_2_MVS_0073_I1_MVS_0073_I2_GCTCCTGATG_AGGTCGTGTC_S20_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_A_Staller_AD_3_0_2_MVS_0073_I1_MVS_0073_I2_GCTCCTGATG_AGGTCGTGTC_S20_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 0.20 seconds.
+
+Grouping trebl_experiment_pool_A_Staller_AD_3_0_2_MVS_0073_I1_MVS_0073_I2_GCTCCTGATG_AGGTCGTGTC_S20_AD_AD_BC_quality...
+Done in 0.51 seconds.
+
+Thresholding...
+Using reads threshold of 10.
+Done in 0.43 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_A_Staller_AD_3_0_2_MVS_0073_I1_MVS_0073_I2_GCTCCTGATG_AGGTCGTGTC_S20_AD_AD_BC_loss_summary'
+Done in 0.06 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.13 seconds.
+
+Reverse complement of sequences...
+Done in 1.71 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 1.11 seconds.
+
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 1.20 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_A_Staller_AD_3_240_1_67p_MVS_0072_I1_MVS_0072_I2_GTCGACTAAC_AAGACCTGAG_S19_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_A_Staller_AD_3_240_1_67p_MVS_0072_I1_MVS_0072_I2_GTCGACTAAC_AAGACCTGAG_S19_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_A_Staller_AD_3_240_1_67p_MVS_0072_I1_MVS_0072_I2_GTCGACTAAC_AAGACCTGAG_S19_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 0.33 seconds.
+
+Grouping trebl_experiment_pool_A_Staller_AD_3_240_1_67p_MVS_0072_I1_MVS_0072_I2_GTCGACTAAC_AAGACCTGAG_S19_AD_AD_BC_quality...
+Done in 0.69 seconds.
+
+Thresholding...
+Using reads threshold of 10.
+Done in 0.45 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_A_Staller_AD_3_240_1_67p_MVS_0072_I1_MVS_0072_I2_GTCGACTAAC_AAGACCTGAG_S19_AD_AD_BC_loss_summary'
+Done in 0.09 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.27 seconds.
+
+Reverse complement of sequences...
+Done in 1.48 seconds.
+
+Extracting 1 barcodes...
+False
+CTCGAG
+
+RPTR_BC: extracting 14 bases after preceder 'CTCGAG'
+Done in 0.60 seconds.
+
+Done in 0.00 seconds.
+
+Done in 0.46 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_A_Staller_RPTR_3_0_2_MVS_0078_I1_MVS_0078_I2_AAGCGCAAGG_AATGCAACCT_S25_RPTR_BC_
+Full prefix for this instance: trebl_experiment_pool_A_Staller_RPTR_3_0_2_MVS_0078_I1_MVS_0078_I2_AAGCGCAAGG_AATGCAACCT_S25_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_A_Staller_RPTR_3_0_2_MVS_0078_I1_MVS_0078_I2_AAGCGCAAGG_AATGCAACCT_S25_RPTR_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 0.08 seconds.
+
+Grouping trebl_experiment_pool_A_Staller_RPTR_3_0_2_MVS_0078_I1_MVS_0078_I2_AAGCGCAAGG_AATGCAACCT_S25_RPTR_BC_quality...
+Done in 0.48 seconds.
+
+Thresholding...
+Using reads threshold of 10.
+Done in 0.44 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_A_Staller_RPTR_3_0_2_MVS_0078_I1_MVS_0078_I2_AAGCGCAAGG_AATGCAACCT_S25_RPTR_BC_loss_summary'
+Done in 0.02 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.27 seconds.
+
+Reverse complement of sequences...
+Done in 1.65 seconds.
+
+Extracting 1 barcodes...
+False
+CTCGAG
+
+RPTR_BC: extracting 14 bases after preceder 'CTCGAG'
+Done in 0.25 seconds.
+
+Done in 0.00 seconds.
+
+Done in 0.75 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_A_Staller_RPTR_3_240_1_67p_MVS_0077_I1_MVS_0077_I2_TAGATCGCTC_CTATCTGGTT_S24_RPTR_BC_
+Full prefix for this instance: trebl_experiment_pool_A_Staller_RPTR_3_240_1_67p_MVS_0077_I1_MVS_0077_I2_TAGATCGCTC_CTATCTGGTT_S24_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_A_Staller_RPTR_3_240_1_67p_MVS_0077_I1_MVS_0077_I2_TAGATCGCTC_CTATCTGGTT_S24_RPTR_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 0.13 seconds.
+
+Grouping trebl_experiment_pool_A_Staller_RPTR_3_240_1_67p_MVS_0077_I1_MVS_0077_I2_TAGATCGCTC_CTATCTGGTT_S24_RPTR_BC_quality...
+Done in 0.51 seconds.
+
+Thresholding...
+Using reads threshold of 10.
+Done in 0.65 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_A_Staller_RPTR_3_240_1_67p_MVS_0077_I1_MVS_0077_I2_TAGATCGCTC_CTATCTGGTT_S24_RPTR_BC_loss_summary'
+Done in 0.06 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.06 seconds.
+
+Reverse complement of sequences...
+Done in 1.56 seconds.
+
+Extracting 1 barcodes...
+False
+CTCGAG
+
+RPTR_BC: extracting 14 bases after preceder 'CTCGAG'
+Done in 0.22 seconds.
+
+Done in 0.00 seconds.
+
+Done in 0.36 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_A_Staller_RPTR_3_5_2_MVS_0079_I1_MVS_0079_I2_TCTTGGCCTC_CTCTATTCGC_S26_RPTR_BC_
+Full prefix for this instance: trebl_experiment_pool_A_Staller_RPTR_3_5_2_MVS_0079_I1_MVS_0079_I2_TCTTGGCCTC_CTCTATTCGC_S26_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_A_Staller_RPTR_3_5_2_MVS_0079_I1_MVS_0079_I2_TCTTGGCCTC_CTCTATTCGC_S26_RPTR_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 0.08 seconds.
+
+Grouping trebl_experiment_pool_A_Staller_RPTR_3_5_2_MVS_0079_I1_MVS_0079_I2_TCTTGGCCTC_CTCTATTCGC_S26_RPTR_BC_quality...
+Done in 0.52 seconds.
+
+Thresholding...
+Using reads threshold of 10.
+Done in 0.46 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_A_Staller_RPTR_3_5_2_MVS_0079_I1_MVS_0079_I2_TCTTGGCCTC_CTCTATTCGC_S26_RPTR_BC_loss_summary'
+Done in 0.02 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.47 seconds.
+
+Reverse complement of sequences...
+Done in 1.66 seconds.
+
+Extracting 1 barcodes...
+False
+CTCGAG
+
+RPTR_BC: extracting 14 bases after preceder 'CTCGAG'
+Done in 0.25 seconds.
+
+Done in 0.00 seconds.
+
+Done in 0.67 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_A_Staller_RPTR_3_10_1_MVS_0080_I1_MVS_0080_I2_GTGAAGGCGA_TCACATCAAG_S27_RPTR_BC_
+Full prefix for this instance: trebl_experiment_pool_A_Staller_RPTR_3_10_1_MVS_0080_I1_MVS_0080_I2_GTGAAGGCGA_TCACATCAAG_S27_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_A_Staller_RPTR_3_10_1_MVS_0080_I1_MVS_0080_I2_GTGAAGGCGA_TCACATCAAG_S27_RPTR_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 0.13 seconds.
+
+Grouping trebl_experiment_pool_A_Staller_RPTR_3_10_1_MVS_0080_I1_MVS_0080_I2_GTGAAGGCGA_TCACATCAAG_S27_RPTR_BC_quality...
+Done in 0.55 seconds.
+
+Thresholding...
+Using reads threshold of 10.
+Done in 0.49 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_A_Staller_RPTR_3_10_1_MVS_0080_I1_MVS_0080_I2_GTGAAGGCGA_TCACATCAAG_S27_RPTR_BC_loss_summary'
+Done in 0.03 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.52 seconds.
+
+Reverse complement of sequences...
+Done in 1.98 seconds.
+
+Extracting 1 barcodes...
+False
+CTCGAG
+
+RPTR_BC: extracting 14 bases after preceder 'CTCGAG'
+Done in 0.28 seconds.
+
+Done in 0.00 seconds.
+
+Done in 0.64 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_A_Staller_RPTR_3_240_1_50p_MVS_0076_I1_MVS_0076_I2_AAGCCTTCAA_TCACGTGTGA_S23_RPTR_BC_
+Full prefix for this instance: trebl_experiment_pool_A_Staller_RPTR_3_240_1_50p_MVS_0076_I1_MVS_0076_I2_AAGCCTTCAA_TCACGTGTGA_S23_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_A_Staller_RPTR_3_240_1_50p_MVS_0076_I1_MVS_0076_I2_AAGCCTTCAA_TCACGTGTGA_S23_RPTR_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 0.11 seconds.
+
+Grouping trebl_experiment_pool_A_Staller_RPTR_3_240_1_50p_MVS_0076_I1_MVS_0076_I2_AAGCCTTCAA_TCACGTGTGA_S23_RPTR_BC_quality...
+Done in 0.49 seconds.
+
+Thresholding...
+Using reads threshold of 10.
+Done in 0.69 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_A_Staller_RPTR_3_240_1_50p_MVS_0076_I1_MVS_0076_I2_AAGCCTTCAA_TCACGTGTGA_S23_RPTR_BC_loss_summary'
+Done in 0.03 seconds.
+
+Plotting BCs:   0%|                                                                                                                                                                         | 0/5 [00:00<?, ?it/s]Plotting BCs:  20%|████████████████████████████████▏                                                                                                                                | 1/5 [00:00<00:00,  9.82it/s]Plotting BCs:  60%|████████████████████████████████████████████████████████████████████████████████████████████████▌                                                                | 3/5 [00:00<00:00, 10.29it/s]Plotting BCs: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 [00:00<00:00, 10.87it/s]Plotting BCs: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 [00:00<00:00, 10.70it/s]
+Plotting BCs:   0%|                                                                                                                                                                         | 0/5 [00:00<?, ?it/s]Plotting BCs:  40%|████████████████████████████████████████████████████████████████▍                                                                                                | 2/5 [00:00<00:00, 15.77it/s]Plotting BCs:  80%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▊                                | 4/5 [00:00<00:00, 15.86it/s]Plotting BCs: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 [00:00<00:00, 15.75it/s]
+Starting yeast pool B analysis
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.49 minutes.
+
+Reverse complement of sequences...
+Done in 26.55 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 13.44 seconds.
+
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 13.52 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_AD_2_180_S49_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_B_AD_2_180_S49_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_AD_2_180_S49_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 30.94 seconds.
+
+Grouping trebl_experiment_pool_B_AD_2_180_S49_AD_AD_BC_quality...
+Done in 2.76 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.78 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_AD_2_180_S49_AD_AD_BC_loss_summary'
+Done in 0.79 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.35 minutes.
+
+Reverse complement of sequences...
+Done in 23.63 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 12.39 seconds.
+
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 13.88 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_AD_4_15_S59_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_B_AD_4_15_S59_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_AD_4_15_S59_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 33.80 seconds.
+
+Grouping trebl_experiment_pool_B_AD_4_15_S59_AD_AD_BC_quality...
+Done in 2.88 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.76 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_AD_4_15_S59_AD_AD_BC_loss_summary'
+Done in 0.60 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.22 minutes.
+
+Reverse complement of sequences...
+Done in 25.57 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 12.59 seconds.
+
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 15.05 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_AD_4_5_S57_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_B_AD_4_5_S57_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_AD_4_5_S57_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 25.05 seconds.
+
+Grouping trebl_experiment_pool_B_AD_4_5_S57_AD_AD_BC_quality...
+Done in 4.96 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.82 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_AD_4_5_S57_AD_AD_BC_loss_summary'
+Done in 1.00 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.27 minutes.
+
+Reverse complement of sequences...
+Done in 21.35 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 12.01 seconds.
+
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 13.31 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_AD_3_10_S52_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_B_AD_3_10_S52_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_AD_3_10_S52_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 25.75 seconds.
+
+Grouping trebl_experiment_pool_B_AD_3_10_S52_AD_AD_BC_quality...
+Done in 4.60 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 1.34 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_AD_3_10_S52_AD_AD_BC_loss_summary'
+Done in 0.66 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.38 minutes.
+
+Reverse complement of sequences...
+Done in 23.07 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 15.32 seconds.
+
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 17.90 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_AD_3_15_S53_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_B_AD_3_15_S53_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_AD_3_15_S53_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 26.94 seconds.
+
+Grouping trebl_experiment_pool_B_AD_3_15_S53_AD_AD_BC_quality...
+Done in 12.89 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.91 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_AD_3_15_S53_AD_AD_BC_loss_summary'
+Done in 1.04 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.36 minutes.
+
+Reverse complement of sequences...
+Done in 28.86 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 14.52 seconds.
+
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 25.84 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_AD_2_10_S46_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_B_AD_2_10_S46_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_AD_2_10_S46_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 26.44 seconds.
+
+Grouping trebl_experiment_pool_B_AD_2_10_S46_AD_AD_BC_quality...
+Done in 10.29 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.81 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_AD_2_10_S46_AD_AD_BC_loss_summary'
+Done in 0.87 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 2.48 minutes.
+
+Reverse complement of sequences...
+Done in 38.57 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 31.65 seconds.
+
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 22.89 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_AD_2_15_S47_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_B_AD_2_15_S47_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_AD_2_15_S47_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 30.84 seconds.
+
+Grouping trebl_experiment_pool_B_AD_2_15_S47_AD_AD_BC_quality...
+Done in 10.11 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 1.48 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_AD_2_15_S47_AD_AD_BC_loss_summary'
+Done in 1.25 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 2.74 minutes.
+
+Reverse complement of sequences...
+Done in 45.92 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 33.73 seconds.
+
+Done in 0.05 seconds.
+
+Merging with design file...
+Done in 27.90 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_AD_3_0_S50_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_B_AD_3_0_S50_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_AD_3_0_S50_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 17.49 seconds.
+
+Grouping trebl_experiment_pool_B_AD_3_0_S50_AD_AD_BC_quality...
+Done in 11.69 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.84 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_AD_3_0_S50_AD_AD_BC_loss_summary'
+Done in 1.31 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.67 minutes.
+
+Reverse complement of sequences...
+Done in 28.71 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 15.36 seconds.
+
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 21.36 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_AD_4_240_S62_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_B_AD_4_240_S62_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_AD_4_240_S62_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 32.24 seconds.
+
+Grouping trebl_experiment_pool_B_AD_4_240_S62_AD_AD_BC_quality...
+Done in 9.73 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.83 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_AD_4_240_S62_AD_AD_BC_loss_summary'
+Done in 1.03 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 2.12 minutes.
+
+Reverse complement of sequences...
+Done in 38.22 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 30.91 seconds.
+
+Done in 0.01 seconds.
+
+Merging with design file...
+Done in 23.21 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_AD_4_180_S61_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_B_AD_4_180_S61_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_AD_4_180_S61_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 41.06 seconds.
+
+Grouping trebl_experiment_pool_B_AD_4_180_S61_AD_AD_BC_quality...
+Done in 13.64 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 1.00 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_AD_4_180_S61_AD_AD_BC_loss_summary'
+Done in 1.60 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.65 minutes.
+
+Reverse complement of sequences...
+Done in 29.99 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 25.00 seconds.
+
+Done in 0.01 seconds.
+
+Merging with design file...
+Done in 26.09 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_AD_3_180_S54_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_B_AD_3_180_S54_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_AD_3_180_S54_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 31.56 seconds.
+
+Grouping trebl_experiment_pool_B_AD_3_180_S54_AD_AD_BC_quality...
+Done in 12.03 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 1.72 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_AD_3_180_S54_AD_AD_BC_loss_summary'
+Done in 1.21 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.98 minutes.
+
+Reverse complement of sequences...
+Done in 32.37 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 26.50 seconds.
+
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 19.89 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_AD_2_30_S48_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_B_AD_2_30_S48_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_AD_2_30_S48_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 38.02 seconds.
+
+Grouping trebl_experiment_pool_B_AD_2_30_S48_AD_AD_BC_quality...
+Done in 9.98 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.92 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_AD_2_30_S48_AD_AD_BC_loss_summary'
+Done in 1.14 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.48 minutes.
+
+Reverse complement of sequences...
+Done in 24.14 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 15.68 seconds.
+
+Done in 0.01 seconds.
+
+Merging with design file...
+Done in 17.45 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_AD_2_0_S44_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_B_AD_2_0_S44_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_AD_2_0_S44_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 26.34 seconds.
+
+Grouping trebl_experiment_pool_B_AD_2_0_S44_AD_AD_BC_quality...
+Done in 9.77 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.93 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_AD_2_0_S44_AD_AD_BC_loss_summary'
+Done in 1.30 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 2.09 minutes.
+
+Reverse complement of sequences...
+Done in 30.01 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 32.74 seconds.
+
+Done in 0.01 seconds.
+
+Merging with design file...
+Done in 36.49 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_AD_4_30_S60_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_B_AD_4_30_S60_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_AD_4_30_S60_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 40.80 seconds.
+
+Grouping trebl_experiment_pool_B_AD_4_30_S60_AD_AD_BC_quality...
+Done in 11.68 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.92 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_AD_4_30_S60_AD_AD_BC_loss_summary'
+Done in 1.19 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.77 minutes.
+
+Reverse complement of sequences...
+Done in 30.94 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 17.00 seconds.
+
+Done in 0.01 seconds.
+
+Merging with design file...
+Done in 29.05 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_AD_4_10_S58_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_B_AD_4_10_S58_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_AD_4_10_S58_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 31.91 seconds.
+
+Grouping trebl_experiment_pool_B_AD_4_10_S58_AD_AD_BC_quality...
+Done in 9.87 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.83 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_AD_4_10_S58_AD_AD_BC_loss_summary'
+Done in 4.30 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 2.67 minutes.
+
+Reverse complement of sequences...
+Done in 33.40 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 18.79 seconds.
+
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 26.63 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_AD_3_5_S51_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_B_AD_3_5_S51_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_AD_3_5_S51_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 29.33 seconds.
+
+Grouping trebl_experiment_pool_B_AD_3_5_S51_AD_AD_BC_quality...
+Done in 10.08 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.88 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_AD_3_5_S51_AD_AD_BC_loss_summary'
+Done in 1.41 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 2.20 minutes.
+
+Reverse complement of sequences...
+Done in 32.93 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 23.77 seconds.
+
+Done in 0.01 seconds.
+
+Merging with design file...
+Done in 18.09 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_AD_4_0_S56_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_B_AD_4_0_S56_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_AD_4_0_S56_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 43.65 seconds.
+
+Grouping trebl_experiment_pool_B_AD_4_0_S56_AD_AD_BC_quality...
+Done in 13.46 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.89 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_AD_4_0_S56_AD_AD_BC_loss_summary'
+Done in 1.27 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.26 minutes.
+
+Reverse complement of sequences...
+Done in 23.67 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 15.03 seconds.
+
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 15.79 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_AD_2_5_S45_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_B_AD_2_5_S45_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_AD_2_5_S45_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 23.57 seconds.
+
+Grouping trebl_experiment_pool_B_AD_2_5_S45_AD_AD_BC_quality...
+Done in 2.76 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.84 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_AD_2_5_S45_AD_AD_BC_loss_summary'
+Done in 0.69 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.53 minutes.
+
+Reverse complement of sequences...
+Done in 25.78 seconds.
+
+Extracting 2 barcodes...
+False
+GGCTAGC
+
+AD: extracting 120 bases after preceder 'GGCTAGC'
+False
+CGCGCC
+
+AD_BC: extracting 11 bases after preceder 'CGCGCC'
+Done in 17.18 seconds.
+
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 15.75 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_AD_3_240_S55_AD_AD_BC_
+Full prefix for this instance: trebl_experiment_pool_B_AD_3_240_S55_AD_AD_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_AD_3_240_S55_AD_AD_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 30.21 seconds.
+
+Grouping trebl_experiment_pool_B_AD_3_240_S55_AD_AD_BC_quality...
+Done in 3.17 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.99 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_AD_3_240_S55_AD_AD_BC_loss_summary'
+Done in 0.82 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.32 minutes.
+
+Reverse complement of sequences...
+Done in 22.28 seconds.
+
+Extracting 1 barcodes...
+False
+CTCGAG
+
+RPTR_BC: extracting 14 bases after preceder 'CTCGAG'
+Done in 4.80 seconds.
+
+Done in 0.00 seconds.
+
+Done in 20.88 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_RPTR_3_0_S70_RPTR_BC_
+Full prefix for this instance: trebl_experiment_pool_B_RPTR_3_0_S70_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_RPTR_3_0_S70_RPTR_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 6.87 seconds.
+
+Grouping trebl_experiment_pool_B_RPTR_3_0_S70_RPTR_BC_quality...
+Done in 4.37 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.41 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_RPTR_3_0_S70_RPTR_BC_loss_summary'
+Done in 0.22 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.41 minutes.
+
+Reverse complement of sequences...
+Done in 24.67 seconds.
+
+Extracting 1 barcodes...
+False
+CTCGAG
+
+RPTR_BC: extracting 14 bases after preceder 'CTCGAG'
+Done in 5.45 seconds.
+
+Done in 0.00 seconds.
+
+Done in 10.05 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_RPTR_4_10_S78_RPTR_BC_
+Full prefix for this instance: trebl_experiment_pool_B_RPTR_4_10_S78_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_RPTR_4_10_S78_RPTR_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 7.53 seconds.
+
+Grouping trebl_experiment_pool_B_RPTR_4_10_S78_RPTR_BC_quality...
+Done in 1.17 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.39 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_RPTR_4_10_S78_RPTR_BC_loss_summary'
+Done in 0.12 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.53 minutes.
+
+Reverse complement of sequences...
+Done in 25.49 seconds.
+
+Extracting 1 barcodes...
+False
+CTCGAG
+
+RPTR_BC: extracting 14 bases after preceder 'CTCGAG'
+Done in 11.26 seconds.
+
+Done in 0.00 seconds.
+
+Done in 10.91 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_RPTR_4_15_S79_RPTR_BC_
+Full prefix for this instance: trebl_experiment_pool_B_RPTR_4_15_S79_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_RPTR_4_15_S79_RPTR_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 6.94 seconds.
+
+Grouping trebl_experiment_pool_B_RPTR_4_15_S79_RPTR_BC_quality...
+Done in 10.57 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.41 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_RPTR_4_15_S79_RPTR_BC_loss_summary'
+Done in 0.51 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.63 minutes.
+
+Reverse complement of sequences...
+Done in 31.91 seconds.
+
+Extracting 1 barcodes...
+False
+CTCGAG
+
+RPTR_BC: extracting 14 bases after preceder 'CTCGAG'
+Done in 5.99 seconds.
+
+Done in 0.00 seconds.
+
+Done in 6.29 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_RPTR_2_5_S64_RPTR_BC_
+Full prefix for this instance: trebl_experiment_pool_B_RPTR_2_5_S64_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_RPTR_2_5_S64_RPTR_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 6.67 seconds.
+
+Grouping trebl_experiment_pool_B_RPTR_2_5_S64_RPTR_BC_quality...
+Done in 8.18 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.47 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_RPTR_2_5_S64_RPTR_BC_loss_summary'
+Done in 0.57 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.62 minutes.
+
+Reverse complement of sequences...
+Done in 34.61 seconds.
+
+Extracting 1 barcodes...
+False
+CTCGAG
+
+RPTR_BC: extracting 14 bases after preceder 'CTCGAG'
+Done in 6.57 seconds.
+
+Done in 0.00 seconds.
+
+Done in 7.52 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_RPTR_3_180_S74_RPTR_BC_
+Full prefix for this instance: trebl_experiment_pool_B_RPTR_3_180_S74_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_RPTR_3_180_S74_RPTR_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 7.49 seconds.
+
+Grouping trebl_experiment_pool_B_RPTR_3_180_S74_RPTR_BC_quality...
+Done in 6.87 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.43 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_RPTR_3_180_S74_RPTR_BC_loss_summary'
+Done in 0.51 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.73 minutes.
+
+Reverse complement of sequences...
+Done in 25.87 seconds.
+
+Extracting 1 barcodes...
+False
+CTCGAG
+
+RPTR_BC: extracting 14 bases after preceder 'CTCGAG'
+Done in 5.96 seconds.
+
+Done in 0.00 seconds.
+
+Done in 5.90 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_RPTR_2_240_S69_RPTR_BC_
+Full prefix for this instance: trebl_experiment_pool_B_RPTR_2_240_S69_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_RPTR_2_240_S69_RPTR_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 7.05 seconds.
+
+Grouping trebl_experiment_pool_B_RPTR_2_240_S69_RPTR_BC_quality...
+Done in 10.34 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.43 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_RPTR_2_240_S69_RPTR_BC_loss_summary'
+Done in 0.51 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.56 minutes.
+
+Reverse complement of sequences...
+Done in 22.15 seconds.
+
+Extracting 1 barcodes...
+False
+CTCGAG
+
+RPTR_BC: extracting 14 bases after preceder 'CTCGAG'
+Done in 5.96 seconds.
+
+Done in 0.00 seconds.
+
+Done in 28.72 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_RPTR_2_30_S67_RPTR_BC_
+Full prefix for this instance: trebl_experiment_pool_B_RPTR_2_30_S67_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_RPTR_2_30_S67_RPTR_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 7.01 seconds.
+
+Grouping trebl_experiment_pool_B_RPTR_2_30_S67_RPTR_BC_quality...
+Done in 10.17 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 7.80 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_RPTR_2_30_S67_RPTR_BC_loss_summary'
+Done in 0.56 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.88 minutes.
+
+Reverse complement of sequences...
+Done in 37.99 seconds.
+
+Extracting 1 barcodes...
+False
+CTCGAG
+
+RPTR_BC: extracting 14 bases after preceder 'CTCGAG'
+Done in 8.72 seconds.
+
+Done in 0.00 seconds.
+
+Done in 7.28 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_RPTR_2_10_S65_RPTR_BC_
+Full prefix for this instance: trebl_experiment_pool_B_RPTR_2_10_S65_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_RPTR_2_10_S65_RPTR_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 8.15 seconds.
+
+Grouping trebl_experiment_pool_B_RPTR_2_10_S65_RPTR_BC_quality...
+Done in 8.30 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.44 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_RPTR_2_10_S65_RPTR_BC_loss_summary'
+Done in 0.53 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 2.11 minutes.
+
+Reverse complement of sequences...
+Done in 28.99 seconds.
+
+Extracting 1 barcodes...
+False
+CTCGAG
+
+RPTR_BC: extracting 14 bases after preceder 'CTCGAG'
+Done in 6.86 seconds.
+
+Done in 0.00 seconds.
+
+Done in 20.43 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_RPTR_4_180_S81_RPTR_BC_
+Full prefix for this instance: trebl_experiment_pool_B_RPTR_4_180_S81_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_RPTR_4_180_S81_RPTR_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 10.93 seconds.
+
+Grouping trebl_experiment_pool_B_RPTR_4_180_S81_RPTR_BC_quality...
+Done in 11.20 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.46 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_RPTR_4_180_S81_RPTR_BC_loss_summary'
+Done in 0.70 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.65 minutes.
+
+Reverse complement of sequences...
+Done in 37.32 seconds.
+
+Extracting 1 barcodes...
+False
+CTCGAG
+
+RPTR_BC: extracting 14 bases after preceder 'CTCGAG'
+Done in 6.31 seconds.
+
+Done in 0.00 seconds.
+
+Done in 4.99 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_RPTR_4_30_S80_RPTR_BC_
+Full prefix for this instance: trebl_experiment_pool_B_RPTR_4_30_S80_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_RPTR_4_30_S80_RPTR_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 6.50 seconds.
+
+Grouping trebl_experiment_pool_B_RPTR_4_30_S80_RPTR_BC_quality...
+Done in 11.73 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.45 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_RPTR_4_30_S80_RPTR_BC_loss_summary'
+Done in 0.55 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.85 minutes.
+
+Reverse complement of sequences...
+Done in 25.47 seconds.
+
+Extracting 1 barcodes...
+False
+CTCGAG
+
+RPTR_BC: extracting 14 bases after preceder 'CTCGAG'
+Done in 6.12 seconds.
+
+Done in 0.00 seconds.
+
+Done in 15.95 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_RPTR_2_0_S63_RPTR_BC_
+Full prefix for this instance: trebl_experiment_pool_B_RPTR_2_0_S63_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_RPTR_2_0_S63_RPTR_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 12.42 seconds.
+
+Grouping trebl_experiment_pool_B_RPTR_2_0_S63_RPTR_BC_quality...
+Done in 16.23 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.65 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_RPTR_2_0_S63_RPTR_BC_loss_summary'
+Done in 0.76 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.91 minutes.
+
+Reverse complement of sequences...
+Done in 32.31 seconds.
+
+Extracting 1 barcodes...
+False
+CTCGAG
+
+RPTR_BC: extracting 14 bases after preceder 'CTCGAG'
+Done in 6.93 seconds.
+
+Done in 0.00 seconds.
+
+Done in 6.32 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_RPTR_4_0_S76_RPTR_BC_
+Full prefix for this instance: trebl_experiment_pool_B_RPTR_4_0_S76_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_RPTR_4_0_S76_RPTR_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 8.08 seconds.
+
+Grouping trebl_experiment_pool_B_RPTR_4_0_S76_RPTR_BC_quality...
+Done in 7.67 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.45 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_RPTR_4_0_S76_RPTR_BC_loss_summary'
+Done in 0.41 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.85 minutes.
+
+Reverse complement of sequences...
+Done in 25.65 seconds.
+
+Extracting 1 barcodes...
+False
+CTCGAG
+
+RPTR_BC: extracting 14 bases after preceder 'CTCGAG'
+Done in 6.84 seconds.
+
+Done in 0.00 seconds.
+
+Done in 10.03 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_RPTR_4_5_S77_RPTR_BC_
+Full prefix for this instance: trebl_experiment_pool_B_RPTR_4_5_S77_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_RPTR_4_5_S77_RPTR_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 9.31 seconds.
+
+Grouping trebl_experiment_pool_B_RPTR_4_5_S77_RPTR_BC_quality...
+Done in 13.80 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 16.94 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_RPTR_4_5_S77_RPTR_BC_loss_summary'
+Done in 2.37 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.77 minutes.
+
+Reverse complement of sequences...
+Done in 37.08 seconds.
+
+Extracting 1 barcodes...
+False
+CTCGAG
+
+RPTR_BC: extracting 14 bases after preceder 'CTCGAG'
+Done in 7.67 seconds.
+
+Done in 0.00 seconds.
+
+Done in 15.19 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_RPTR_3_10_S72_RPTR_BC_
+Full prefix for this instance: trebl_experiment_pool_B_RPTR_3_10_S72_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_RPTR_3_10_S72_RPTR_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 9.12 seconds.
+
+Grouping trebl_experiment_pool_B_RPTR_3_10_S72_RPTR_BC_quality...
+Done in 12.14 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 16.30 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_RPTR_3_10_S72_RPTR_BC_loss_summary'
+Done in 1.25 seconds.
+
+Reading 1 FASTQ/TXT file(s)...
+Done in 1.61 minutes.
+
+Reverse complement of sequences...
+Done in 34.24 seconds.
+
+Extracting 1 barcodes...
+False
+CTCGAG
+
+RPTR_BC: extracting 14 bases after preceder 'CTCGAG'
+Done in 10.61 seconds.
+
+Done in 0.00 seconds.
+
+Done in 5.80 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): trebl_experiment_pool_B_RPTR_3_5_S71_RPTR_BC_
+Full prefix for this instance: trebl_experiment_pool_B_RPTR_3_5_S71_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. quality
+3. grouped
+4. thresholded
+
+
+Filtering to high-quality reads...
+Created table: trebl_experiment_pool_B_RPTR_3_5_S71_RPTR_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 8.27 seconds.
+
+Grouping trebl_experiment_pool_B_RPTR_3_5_S71_RPTR_BC_quality...
+Done in 8.95 seconds.
+
+Thresholding...
+Using reads threshold of 100.
+Done in 0.49 seconds.
+
+Done.
+Saved loss summary table as 'trebl_experiment_pool_B_RPTR_3_5_S71_RPTR_BC_loss_summary'
+Done in 0.40 seconds.
+
+Plotting BCs:   0%|                                                                                                                                                                        | 0/19 [00:00<?, ?it/s]Plotting BCs:   5%|████████▍                                                                                                                                                       | 1/19 [00:00<00:12,  1.43it/s]Plotting BCs:  11%|████████████████▊                                                                                                                                               | 2/19 [00:01<00:15,  1.09it/s]Plotting BCs:  16%|█████████████████████████▎                                                                                                                                      | 3/19 [00:02<00:11,  1.34it/s]Plotting BCs:  21%|█████████████████████████████████▋                                                                                                                              | 4/19 [01:02<06:02, 24.16s/it]Plotting BCs:  26%|██████████████████████████████████████████                                                                                                                      | 5/19 [01:08<04:05, 17.52s/it]Plotting BCs:  32%|██████████████████████████████████████████████████▌                                                                                                             | 6/19 [01:08<02:32, 11.69s/it]Plotting BCs:  37%|██████████████████████████████████████████████████████████▉                                                                                                     | 7/19 [01:09<01:36,  8.06s/it]Plotting BCs:  42%|███████████████████████████████████████████████████████████████████▎                                                                                            | 8/19 [02:23<05:20, 29.10s/it]Plotting BCs:  47%|███████████████████████████████████████████████████████████████████████████▊                                                                                    | 9/19 [04:14<09:07, 54.72s/it]Plotting BCs:  53%|███████████████████████████████████████████████████████████████████████████████████▋                                                                           | 10/19 [04:17<05:50, 38.94s/it]Plotting BCs:  58%|████████████████████████████████████████████████████████████████████████████████████████████                                                                   | 11/19 [04:18<03:37, 27.15s/it]Plotting BCs:  63%|████████████████████████████████████████████████████████████████████████████████████████████████████▍                                                          | 12/19 [04:18<02:13, 19.05s/it]Plotting BCs:  68%|████████████████████████████████████████████████████████████████████████████████████████████████████████████▊                                                  | 13/19 [04:19<01:20, 13.42s/it]Plotting BCs:  74%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▏                                         | 14/19 [04:19<00:47,  9.50s/it]Plotting BCs:  79%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▌                                 | 15/19 [05:48<02:13, 33.25s/it]Plotting BCs:  84%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▉                         | 16/19 [05:48<01:10, 23.42s/it]Plotting BCs:  89%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▎                | 17/19 [05:49<00:33, 16.52s/it]Plotting BCs:  95%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▋        | 18/19 [05:49<00:11, 11.71s/it]Plotting BCs: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 19/19 [07:13<00:00, 33.44s/it]Plotting BCs: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 19/19 [07:13<00:00, 22.83s/it]
+Plotting BCs:   0%|                                                                                                                                                                        | 0/15 [00:00<?, ?it/s]Plotting BCs:   7%|██████████▋                                                                                                                                                     | 1/15 [00:01<00:16,  1.21s/it]Plotting BCs:  13%|█████████████████████▎                                                                                                                                          | 2/15 [00:01<00:08,  1.56it/s]Plotting BCs:  20%|████████████████████████████████                                                                                                                                | 3/15 [00:01<00:04,  2.41it/s]Plotting BCs:  27%|██████████████████████████████████████████▋                                                                                                                     | 4/15 [00:01<00:03,  2.91it/s]Plotting BCs:  33%|█████████████████████████████████████████████████████▎                                                                                                          | 5/15 [00:01<00:02,  3.66it/s]Plotting BCs:  40%|████████████████████████████████████████████████████████████████                                                                                                | 6/15 [00:02<00:02,  4.33it/s]Plotting BCs:  47%|██████████████████████████████████████████████████████████████████████████▋                                                                                     | 7/15 [00:02<00:01,  4.87it/s]Plotting BCs:  53%|█████████████████████████████████████████████████████████████████████████████████████▎                                                                          | 8/15 [00:02<00:01,  5.43it/s]Plotting BCs:  60%|████████████████████████████████████████████████████████████████████████████████████████████████                                                                | 9/15 [00:02<00:01,  5.78it/s]Plotting BCs:  67%|██████████████████████████████████████████████████████████████████████████████████████████████████████████                                                     | 10/15 [00:02<00:00,  5.13it/s]Plotting BCs:  73%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▌                                          | 11/15 [00:02<00:00,  5.52it/s]Plotting BCs:  80%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▏                               | 12/15 [00:03<00:00,  6.00it/s]Plotting BCs:  87%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▊                     | 13/15 [00:03<00:00,  6.14it/s]Plotting BCs:  93%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▍          | 14/15 [00:03<00:00,  6.45it/s]Plotting BCs: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 15/15 [00:03<00:00,  6.47it/s]Plotting BCs: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 15/15 [00:03<00:00,  4.23it/s]
+Start yeast pool C PolyT analysis
+/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/conda/trebl_env/bin/python: can't open file '/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/notebooks/GCN4/pipeline_analysis/05_yeast_poolC_polyt.py': [Errno 2] No such file or directory
+Start yeast pool C UMI analysis
+/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/conda/trebl_env/bin/python: can't open file '/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/notebooks/GCN4/pipeline_analysis/05_yeast_poolC_umi.py': [Errno 2] No such file or directory

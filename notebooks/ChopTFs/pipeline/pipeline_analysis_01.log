@@ -1,0 +1,72 @@
+Starting step1 analysis
+Reading 1 FASTQ/TXT file(s)...
+Done in 5.61 minutes.
+
+Reverse complement of sequences...
+Done in 1.33 minutes.
+
+Extracting 4 barcodes...
+False
+GGCTAGC
+TGACTAG
+AD: extracting between 'GGCTAGC' and 'TGACTAG'
+False
+
+TGACTAG
+AD_end: extracting 40 bases before post 'TGACTAG'
+False
+CGCGCC
+GGGCCC
+AD_BC: extracting between 'CGCGCC' and 'GGGCCC'
+False
+CTCGAG
+GGCCGC
+RPTR_BC: extracting between 'CTCGAG' and 'GGCCGC'
+Done in 1.70 minutes.
+
+Done in 0.00 seconds.
+
+Merging with design file...
+Done in 36.85 seconds.
+
+Mapping complete.
+Base prefix (stable across descriptors): step1_AD_AD_end_AD_BC_RPTR_BC_
+Full prefix for this instance: step1_AD_AD_end_AD_BC_RPTR_BC_
+
+Using the following step order:
+1. initial
+2. grouped
+3. thresholded
+4. barcode_exists
+5. unique_target
+6. quality
+7. designed
+
+Grouping step1_AD_AD_end_AD_BC_RPTR_BC_initial...
+Done in 21.26 seconds.
+
+Thresholding...
+Using reads threshold of 50.
+Done in 9.65 seconds.
+
+Removing rows with null or empty barcodes (excluding AD)...
+Done in 2.25 seconds.
+
+Filtering fixed so that at least 90% of reads come from the most abundant target...
+	Processing mapping 1: RPTR_BC → AD_end || '-' || AD_BC
+Created filtered table: step1_AD_AD_end_AD_BC_RPTR_BC_unique_target
+Done in 3.92 seconds.
+
+
+Filtering to high-quality reads...
+Created table: step1_AD_AD_end_AD_BC_RPTR_BC_quality — filtered for TRUE in all *_qual columns.
+Done in 1.41 seconds.
+
+
+Filtering to designed sequences...
+Created table: step1_AD_AD_end_AD_BC_RPTR_BC_designed — kept only Designed == 1.
+Done in 1.70 seconds.
+
+Done.
+Saved loss summary table as 'step1_AD_AD_end_AD_BC_RPTR_BC_loss_summary'
+Done in 2.14 seconds.
