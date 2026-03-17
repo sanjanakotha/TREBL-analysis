@@ -341,4 +341,4 @@ def plot_loss_helper(ax, palette, text_offset, show_background, default_map_orde
         plt.savefig(filename, bbox_inches="tight")
 
     return fig, ax
-    
+

@@ -12,5 +12,8 @@
 # echo "Starting step1 analysis"
 # /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/conda/trebl_env/bin/python /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/notebooks/ChopTFs/pipeline/01_step1.py
 
-echo "Starting trebl experiment analysis"
-/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/conda/trebl_env/bin/python /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/notebooks/ChopTFs/pipeline/04_trebl_experiment.py
+# echo "Starting trebl experiment analysis"
+# /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/conda/trebl_env/bin/python /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/notebooks/ChopTFs/pipeline/04_trebl_experiment.py
+
+echo "Starting empty AD search"
+/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/conda/trebl_env/bin/python /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/notebooks/ChopTFs/pipeline/06a_empty_AD_time_normalization_step1.py

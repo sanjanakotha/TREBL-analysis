@@ -23,8 +23,28 @@ RT_bc_objects = [EC_RPTR_BC]
 #                           output_dir="/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/data/GCN4_pool_C_UMI_RPTR_fastp/", 
 #                           script_path="/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/savio_jobs/fastp.sh")
 
-yeast_pool_C_umi_AD_seq_files = glob.glob("/global/scratch/projects/fc_mvslab/data/sequencing/20250218_MZCCSCU_MedGenome/MZ/results/assembled/*")
-yeast_pool_C_umi_RT_seq_files = glob.glob("/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/data/GCN4_pool_C_UMI_RPTR_fastp/*")
+# yeast_pool_C_umi_AD_seq_files = glob.glob("/global/scratch/projects/fc_mvslab/data/sequencing/20250218_MZCCSCU_MedGenome/MZ/results/assembled/*.fastq.gz")
+# yeast_pool_C_umi_RT_seq_files = glob.glob("/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/data/GCN4_pool_C_UMI_RPTR_fastp/*.fastq.gz")
+
+yeast_pool_C_umi_AD_seq_files = []
+
+import glob
+import os
+
+# RT input files (only fastq.gz)
+yeast_pool_C_umi_RT_seq_files = glob.glob("/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/data/GCN4_pool_C_UMI_RPTR_fastp/*.fastq.gz")
+
+# existing outputs
+existing_outputs = glob.glob("/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4_pipeline/trebl_experiment_pool_C_umi_/*/*_simple_umi_counts.tsv")
+
+# get processed sample names
+processed = {os.path.basename(x).replace("_simple_umi_counts.tsv", "") for x in existing_outputs}
+
+# filter input files
+yeast_pool_C_umi_RT_seq_files = [f for f in yeast_pool_C_umi_RT_seq_files if os.path.basename(f).replace(".fastq.gz", "") not in processed]
+
+print("Already processed:", len(processed))
+print("Remaining files:", len(yeast_pool_C_umi_RT_seq_files))
 
 pipeline.trebl_experiment_analysis(
         AD_seq_files = yeast_pool_C_umi_AD_seq_files,

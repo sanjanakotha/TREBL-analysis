@@ -20,8 +20,8 @@ AD_bc_objects = [AD_end, AD_BC]
 RT_bc_objects = [RPTR_BC]
 
 AD_seq_files = []
-#glob.glob("/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/data/ChopTF/TREBL_ChopTF_AD_fastp/*")
-RT_seq_files = glob.glob("/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/data/ChopTF/TREBL_ChopTF_RP_fastp/*")
+#glob.glob("/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/data/ChopTF/TREBL_ChopTF_AD_fastp/*fastq.gz")
+RT_seq_files = glob.glob("/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/data/ChopTF/TREBL_ChopTF_RP_fastp/*fastq.gz")
 
 pipeline.trebl_experiment_analysis(
         AD_seq_files = AD_seq_files,
