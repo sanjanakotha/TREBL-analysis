@@ -14,12 +14,15 @@
 #SBATCH --output=/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/notebooks/ChopTFs/pipeline/21a_exponential_parrot.log
 #
 ## Command(s) to run:
-/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/conda/parrot/bin/parrot-train \
+/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/conda/parrot_fixed/bin/parrot-train \
     '/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/ChopTFs_pipeline/speed/PARROT/exponential_speed_input.txt' \
     '/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/ChopTFs_pipeline/speed/PARROT/exponential_speed' \
     -d 'sequence' -c 1 --include-figs
-
-/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/conda/parrot/bin/parrot-train \
+/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/conda/parrot_fixed/bin/parrot-train \
     '/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/ChopTFs_pipeline/speed/PARROT/exponential_strength_input.txt' \
     '/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/ChopTFs_pipeline/speed/PARROT/exponential_strength' \
+    -d 'sequence' -c 1 --include-figs
+/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/conda/parrot_fixed/bin/parrot-train \
+    '/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/ChopTFs_pipeline/speed/PARROT/exponential_speed_input_k.txt' \
+    '/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/ChopTFs_pipeline/speed/PARROT/exponential_speed_k' \
     -d 'sequence' -c 1 --include-figs
