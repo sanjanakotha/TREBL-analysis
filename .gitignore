@@ -12,3 +12,8 @@ notebooks/GCN4/error_corrected/trebl_experiment_yeast_pool_A_Staller_AD_3_5_2_MV
 **/.ipynb_checkpoints/
 
 notebooks/.DS_Store
+!output/ChopTFs_pipeline/
+!output/ChopTFs_pipeline/**
+
+!output/GCN4_pipeline/
+!output/GCN4_pipeline/**
