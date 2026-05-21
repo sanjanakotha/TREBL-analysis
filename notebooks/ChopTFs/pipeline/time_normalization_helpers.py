@@ -35,6 +35,7 @@ def plot_hists_over_time(activities, column = "activity_directional", sample=Fal
     fig.supxlabel(xlabel, y = 0.05)
     fig.supylabel("Count", x = -0.1)
     sns.despine()
+    plt.show()
     return fig,axs
 
 def plot_gaussian_fits_over_time(activities, cached_fits, column = "activity_directional", xlabel = "Activity", dist_color = 'C0', xlims = (0,100)):
@@ -94,6 +95,7 @@ def plot_gaussian_fits_over_time(activities, cached_fits, column = "activity_dir
     fig.supxlabel(xlabel, y = 0.05)
     fig.supylabel("Count", x = -0.1)
     sns.despine()
+    plt.show()
         
     return fig,axs
 
@@ -441,6 +443,7 @@ def plot_ridge(activities, column="activity_directional", sample=False, bw_adjus
 
     fig.supxlabel(xlabel, y=0.02)
     plt.subplots_adjust(hspace=-0.4)
+    plt.show()
 
     return fig, axes
 
