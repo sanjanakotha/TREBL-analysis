@@ -1,0 +1,122 @@
+Error importing GPy.
+ If trying to run parrot-optimize, make sure to use `pip install idptools-parrot[optimize]`
+Namespace(data_file='/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4_pipeline/speed/PARROT/chopTFs_gcn4_merged_input_strength.txt', output_network='/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4_pipeline/speed/PARROT/chopTFs_gcn4_merged_strength', datatype='sequence', classes=1, hidden_size=10, num_layers=1, learning_rate=0.001, batch=32, epochs=100, split='', stop='iter', setFractions=[0.7, 0.15, 0.15], encode='onehot', excludeSeqID=False, probabilistic_classification=False, include_figs=True, ignore_metrics=False, forceCPU=False, gpu_id=None, ignore_warnings=False, save_splits=False, verbose=False, silent=False)
+
+#############################################
+WARNING: Duplicate sequences detected in dataset.
+
+Duplicated sequences:
+Duplicate found: IPELDDAVVESFFSSSTDSTPMFEYENLEDNSKEWTSLFD
+Duplicate found: LTALTSPSLFDGSPDFDTFDISPNFGHSDLENPDTWFSLF
+Duplicate found: STDSTPMFEYENLENNSKEWTSLFDNDIPVTTDDVSLADK
+Duplicate found: AKVDTEEEDKTMVDSTSLSWEDLFDFESYSTDLIASINPD
+Duplicate found: STDSTPMFEYEGLEDNSKEWTSLFDNDIPVTTDDVSPADK
+Duplicate found: STAPPTDVSLGDELHLDGEDVAMAHADALDDFDLDMLGDG
+Duplicate found: STWTSLFDSTPMFEYENLEDNSKEDNDIPVTTDDVSLADK
+Duplicate found: ESEDSSDEDNTSDDKVYSMWNELFIDTTEVAPLSTNAPIT
+Duplicate found: TDAIDEEVLMSLVIEMGLDRIKELPELALGQNEADAMTDA
+Duplicate found: NTDSTHMFEYWALEDNSKEWTSLFDNDIWVTTDDVSLADK
+Duplicate found: TAPDAKTVLPIPELDDAVVESFFSSSTDSTPMFEYENLED
+Duplicate found: STDSTPMFEYENLQNNSKEWTSLFDNNIPVTTNNVSLANK
+Duplicate found: STDSTPMFEYENLENNSKQWTSLFDNDIPVTTDNVSLADK
+Duplicate found: DFDFALPQTATAPDAKTVLPIPELDDAVVESFFSSSTDST
+Duplicate found: DDAVVESFFSSSTDSTPAAEAENAEDNSKEWTSLFDNDIP
+Duplicate found: SFFSSSTDSTPMFEYENLEDNSKEWTSLFDNDIPVTTDDV
+Duplicate found: TDFIDEEVLMSLVIEMGLDRIKELPELWLGQNEFDFMTDF
+Duplicate found: DSPGPGFTPHDSAPYGAIDMADFEFEQMFTDAIGIDEYGG
+Duplicate found: DAVVESFFSSSTDSTPMFEYENLEDNSKEWTSLFDNDIPV
+Duplicate found: DDAVVESAASSSTDSTPMFEYENLEDNSKEWTSLFDNDIP
+Duplicate found: DDAVVESFFSSSTDSTPMFEYENLEDNSKEWTSLFDNDIP
+Duplicate found: MTDSTPMFEYELTENNSKEWTSLFDTDIPVTTDDESLADK
+
+This may cause overfitting or overestimation of performance.
+
+#############################################
+
+
+PARROT with user-specified parameters
+-------------------------------------
+Validation set loss per epoch:
+Epoch 0	Loss 1.0167
+Epoch 5	Loss 0.7987
+Epoch 10	Loss 0.6399
+Epoch 15	Loss 0.6232
+Epoch 20	Loss 0.6109
+Epoch 25	Loss 0.5645
+Epoch 30	Loss 0.5819
+Epoch 35	Loss 0.5623
+Epoch 40	Loss 0.5555
+Epoch 45	Loss 0.5392
+Epoch 50	Loss 0.5384
+Epoch 55	Loss 0.5370
+Epoch 60	Loss 0.5319
+Epoch 65	Loss 0.5334
+Epoch 70	Loss 0.5305
+Epoch 75	Loss 0.5322
+Epoch 80	Loss 0.5302
+Epoch 85	Loss 0.5250
+Epoch 90	Loss 0.5218
+Epoch 95	Loss 0.5386
+
+Test Loss: 0.5114
+Error importing GPy.
+ If trying to run parrot-optimize, make sure to use `pip install idptools-parrot[optimize]`
+Namespace(data_file='/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4_pipeline/speed/PARROT/chopTFs_gcn4_merged_input_k.txt', output_network='/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4_pipeline/speed/PARROT/chopTFs_gcn4_merged_k', datatype='sequence', classes=1, hidden_size=10, num_layers=1, learning_rate=0.001, batch=32, epochs=100, split='', stop='iter', setFractions=[0.7, 0.15, 0.15], encode='onehot', excludeSeqID=False, probabilistic_classification=False, include_figs=True, ignore_metrics=False, forceCPU=False, gpu_id=None, ignore_warnings=False, save_splits=False, verbose=False, silent=False)
+
+#############################################
+WARNING: Duplicate sequences detected in dataset.
+
+Duplicated sequences:
+Duplicate found: DDAVVESFFSSSTDSTPAAEAENAEDNSKEWTSLFDNDIP
+Duplicate found: TDFIDEEVLMSLVIEMGLDRIKELPELWLGQNEFDFMTDF
+Duplicate found: DFDFALPQTATAPDAKTVLPIPELDDAVVESFFSSSTDST
+Duplicate found: DDAVVESAASSSTDSTPMFEYENLEDNSKEWTSLFDNDIP
+Duplicate found: STDSTPMFEYENLENNSKEWTSLFDNDIPVTTDDVSLADK
+Duplicate found: AKVDTEEEDKTMVDSTSLSWEDLFDFESYSTDLIASINPD
+Duplicate found: STDSTPMFEYEGLEDNSKEWTSLFDNDIPVTTDDVSPADK
+Duplicate found: DDAVVESFFSSSTDSTPMFEYENLEDNSKEWTSLFDNDIP
+Duplicate found: STDSTPMFEYENLENNSKQWTSLFDNDIPVTTDNVSLADK
+Duplicate found: TAPDAKTVLPIPELDDAVVESFFSSSTDSTPMFEYENLED
+Duplicate found: LTALTSPSLFDGSPDFDTFDISPNFGHSDLENPDTWFSLF
+Duplicate found: STWTSLFDSTPMFEYENLEDNSKEDNDIPVTTDDVSLADK
+Duplicate found: STDSTPMFEYENLQNNSKEWTSLFDNNIPVTTNNVSLANK
+Duplicate found: STAPPTDVSLGDELHLDGEDVAMAHADALDDFDLDMLGDG
+Duplicate found: DSPGPGFTPHDSAPYGAIDMADFEFEQMFTDAIGIDEYGG
+Duplicate found: NTDSTHMFEYWALEDNSKEWTSLFDNDIWVTTDDVSLADK
+Duplicate found: TDAIDEEVLMSLVIEMGLDRIKELPELALGQNEADAMTDA
+Duplicate found: ESEDSSDEDNTSDDKVYSMWNELFIDTTEVAPLSTNAPIT
+Duplicate found: DAVVESFFSSSTDSTPMFEYENLEDNSKEWTSLFDNDIPV
+Duplicate found: IPELDDAVVESFFSSSTDSTPMFEYENLEDNSKEWTSLFD
+Duplicate found: MTDSTPMFEYELTENNSKEWTSLFDTDIPVTTDDESLADK
+Duplicate found: SFFSSSTDSTPMFEYENLEDNSKEWTSLFDNDIPVTTDDV
+
+This may cause overfitting or overestimation of performance.
+
+#############################################
+
+
+PARROT with user-specified parameters
+-------------------------------------
+Validation set loss per epoch:
+Epoch 0	Loss 0.0413
+Epoch 5	Loss 0.0361
+Epoch 10	Loss 0.0329
+Epoch 15	Loss 0.0324
+Epoch 20	Loss 0.0318
+Epoch 25	Loss 0.0337
+Epoch 30	Loss 0.0319
+Epoch 35	Loss 0.0320
+Epoch 40	Loss 0.0319
+Epoch 45	Loss 0.0326
+Epoch 50	Loss 0.0319
+Epoch 55	Loss 0.0317
+Epoch 60	Loss 0.0319
+Epoch 65	Loss 0.0321
+Epoch 70	Loss 0.0329
+Epoch 75	Loss 0.0323
+Epoch 80	Loss 0.0321
+Epoch 85	Loss 0.0325
+Epoch 90	Loss 0.0321
+Epoch 95	Loss 0.0326
+
+Test Loss: 0.0016

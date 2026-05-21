@@ -1,87 +1,58 @@
 Error importing GPy.
  If trying to run parrot-optimize, make sure to use `pip install idptools-parrot[optimize]`
-Namespace(data_file='/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4_pipeline/speed/PARROT/exponential_speed_input.txt', output_network='/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4_pipeline/speed/PARROT/exponential_speed', datatype='sequence', classes=1, hidden_size=10, num_layers=1, learning_rate=0.001, batch=32, epochs=100, split='', stop='iter', setFractions=[0.7, 0.15, 0.15], encode='onehot', excludeSeqID=False, probabilistic_classification=False, include_figs=True, ignore_metrics=False, forceCPU=False, gpu_id=None, ignore_warnings=False, save_splits=False, verbose=False, silent=False)
+Namespace(data_file='/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4_pipeline/speed/PARROT/exponential_strength_input_more_seqs.txt', output_network='/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4_pipeline/speed/PARROT/exponential_strength_more_seqs', datatype='sequence', classes=1, hidden_size=10, num_layers=1, learning_rate=0.001, batch=32, epochs=100, split='', stop='iter', setFractions=[0.7, 0.15, 0.15], encode='onehot', excludeSeqID=False, probabilistic_classification=False, include_figs=True, ignore_metrics=False, forceCPU=False, gpu_id=None, ignore_warnings=False, save_splits=False, verbose=False, silent=False)
 
 PARROT with user-specified parameters
 -------------------------------------
 Validation set loss per epoch:
-Epoch 0	Loss 0.1739
-Epoch 5	Loss 0.1626
-Epoch 10	Loss 0.1362
-Epoch 15	Loss 0.1225
-Epoch 20	Loss 0.1062
-Epoch 25	Loss 0.1060
-Epoch 30	Loss 0.1023
-Epoch 35	Loss 0.1013
-Epoch 40	Loss 0.1048
-Epoch 45	Loss 0.1016
-Epoch 50	Loss 0.0987
-Epoch 55	Loss 0.1059
-Epoch 60	Loss 0.1004
-Epoch 65	Loss 0.0978
-Epoch 70	Loss 0.1110
-Epoch 75	Loss 0.1154
-Epoch 80	Loss 0.0979
-Epoch 85	Loss 0.1034
-Epoch 90	Loss 0.1018
-Epoch 95	Loss 0.1005
+Epoch 0	Loss 0.9680
+Epoch 5	Loss 0.7930
+Epoch 10	Loss 0.6260
+Epoch 15	Loss 0.5784
+Epoch 20	Loss 0.5362
+Epoch 25	Loss 0.5543
+Epoch 30	Loss 0.5120
+Epoch 35	Loss 0.4984
+Epoch 40	Loss 0.4917
+Epoch 45	Loss 0.4770
+Epoch 50	Loss 0.4715
+Epoch 55	Loss 0.4621
+Epoch 60	Loss 0.4643
+Epoch 65	Loss 0.4541
+Epoch 70	Loss 0.4571
+Epoch 75	Loss 0.4710
+Epoch 80	Loss 0.4610
+Epoch 85	Loss 0.4563
+Epoch 90	Loss 0.4823
+Epoch 95	Loss 0.4652
 
-Test Loss: 0.0167
+Test Loss: 0.3848
 Error importing GPy.
  If trying to run parrot-optimize, make sure to use `pip install idptools-parrot[optimize]`
-Namespace(data_file='/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4_pipeline/speed/PARROT/exponential_strength_input.txt', output_network='/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4_pipeline/speed/PARROT/exponential_strength', datatype='sequence', classes=1, hidden_size=10, num_layers=1, learning_rate=0.001, batch=32, epochs=100, split='', stop='iter', setFractions=[0.7, 0.15, 0.15], encode='onehot', excludeSeqID=False, probabilistic_classification=False, include_figs=True, ignore_metrics=False, forceCPU=False, gpu_id=None, ignore_warnings=False, save_splits=False, verbose=False, silent=False)
+Namespace(data_file='/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4_pipeline/speed/PARROT/exponential_speed_input_k_more_seqs.txt', output_network='/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4_pipeline/speed/PARROT/exponential_speed_k_more_seqs', datatype='sequence', classes=1, hidden_size=10, num_layers=1, learning_rate=0.001, batch=32, epochs=100, split='', stop='iter', setFractions=[0.7, 0.15, 0.15], encode='onehot', excludeSeqID=False, probabilistic_classification=False, include_figs=True, ignore_metrics=False, forceCPU=False, gpu_id=None, ignore_warnings=False, save_splits=False, verbose=False, silent=False)
 
 PARROT with user-specified parameters
 -------------------------------------
 Validation set loss per epoch:
-Epoch 0	Loss 2.2313
-Epoch 5	Loss 0.8804
-Epoch 10	Loss 0.8729
-Epoch 15	Loss 0.7759
-Epoch 20	Loss 0.6859
-Epoch 25	Loss 0.6448
-Epoch 30	Loss 0.6144
-Epoch 35	Loss 0.6246
-Epoch 40	Loss 0.6154
-Epoch 45	Loss 0.5738
-Epoch 50	Loss 0.6112
-Epoch 55	Loss 0.5517
-Epoch 60	Loss 0.5501
-Epoch 65	Loss 0.6500
-Epoch 70	Loss 0.5422
-Epoch 75	Loss 0.5277
-Epoch 80	Loss 0.5742
-Epoch 85	Loss 0.5151
-Epoch 90	Loss 0.5226
-Epoch 95	Loss 0.5227
+Epoch 0	Loss 0.0431
+Epoch 5	Loss 0.0387
+Epoch 10	Loss 0.0346
+Epoch 15	Loss 0.0310
+Epoch 20	Loss 0.0305
+Epoch 25	Loss 0.0301
+Epoch 30	Loss 0.0309
+Epoch 35	Loss 0.0298
+Epoch 40	Loss 0.0310
+Epoch 45	Loss 0.0296
+Epoch 50	Loss 0.0295
+Epoch 55	Loss 0.0295
+Epoch 60	Loss 0.0297
+Epoch 65	Loss 0.0299
+Epoch 70	Loss 0.0314
+Epoch 75	Loss 0.0305
+Epoch 80	Loss 0.0298
+Epoch 85	Loss 0.0300
+Epoch 90	Loss 0.0299
+Epoch 95	Loss 0.0305
 
-Test Loss: 0.4226
-Error importing GPy.
- If trying to run parrot-optimize, make sure to use `pip install idptools-parrot[optimize]`
-Namespace(data_file='/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4_pipeline/speed/PARROT/exponential_speed_input_k.txt', output_network='/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/GCN4_pipeline/speed/PARROT/exponential_speed_k', datatype='sequence', classes=1, hidden_size=10, num_layers=1, learning_rate=0.001, batch=32, epochs=100, split='', stop='iter', setFractions=[0.7, 0.15, 0.15], encode='onehot', excludeSeqID=False, probabilistic_classification=False, include_figs=True, ignore_metrics=False, forceCPU=False, gpu_id=None, ignore_warnings=False, save_splits=False, verbose=False, silent=False)
-
-PARROT with user-specified parameters
--------------------------------------
-Validation set loss per epoch:
-Epoch 0	Loss 0.0507
-Epoch 5	Loss 0.0410
-Epoch 10	Loss 0.0386
-Epoch 15	Loss 0.0376
-Epoch 20	Loss 0.0367
-Epoch 25	Loss 0.0343
-Epoch 30	Loss 0.0311
-Epoch 35	Loss 0.0304
-Epoch 40	Loss 0.0292
-Epoch 45	Loss 0.0335
-Epoch 50	Loss 0.0298
-Epoch 55	Loss 0.0287
-Epoch 60	Loss 0.0290
-Epoch 65	Loss 0.0289
-Epoch 70	Loss 0.0351
-Epoch 75	Loss 0.0299
-Epoch 80	Loss 0.0286
-Epoch 85	Loss 0.0294
-Epoch 90	Loss 0.0296
-Epoch 95	Loss 0.0289
-
-Test Loss: 0.0017
+Test Loss: 0.0027
