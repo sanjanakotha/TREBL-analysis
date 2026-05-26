@@ -1,0 +1,5 @@
+map,description,unique_count,unique_AD_count,total_reads,% of previous step,% of total reads
+initial,Initial combinations,29888049,682737,29888049,100.0,100.0
+quality,After quality filtering,28880168,654545,28880168,96.63,96.63
+grouped,Grouped counts,803925,654545,28880168,100.0,96.63
+thresholded,Filtered by # reads > 20,28893,20923,27824637,96.35,93.1
