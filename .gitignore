@@ -11,9 +11,6 @@ logs/
 notebooks/NKX2-2/error_corrected/
 notebooks/GCN4/error_corrected/
 
-# ── Notebooks: keep saved_figures ───────────────────────────
-notebooks/**/saved_figures/
-
 # ── Data: ignore everything, then allow specific files ───────
 data/*
 !data/DBD_sql_dump.csv.gz
@@ -60,8 +57,17 @@ output/ChopTFs_pipeline/RPTR_BC_trebl_experiment_results.csv
 output/ChopTFs_pipeline/RT_trebl_experiment_results.csv
 output/ChopTFs_pipeline/trebl_experiment_activities_per_barcode.csv
 !output/ChopTFs_pipeline_step1_empty_ADs
+
 !output/GCN4_pipeline/
 output/GCN4_pipeline/downsampling/
+!output/GCN4_pipeline/speed/
+output/GCN4_pipeline/speed/NARDINI/
+output/GCN4_pipeline/speed/NARDINI_retry/
+output/GCN4_pipeline/time_normalization/
+output/GCN4_pipeline/trebl_experiment_pool_C_umi_/
+output/GCN4_pipeline/AD_trebl_experiment_pool_C_PolyT_results.csv
+output/GCN4_pipeline/RPTR_BC_trebl_experiment_pool_C_umi_results.csv
+
 !output/GCN4_preseq_RT.csv
 !output/GCN4_preseq_AD.csv
 !output/chopTFs_gcn4_exponential_merged.csv
