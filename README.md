@@ -6,6 +6,40 @@ Analysis pipelines and notebooks for TREBL.
 
 Clone this repo. The main analysis notebooks are in [`notebooks/ChopTFs/pipeline/`](notebooks/ChopTFs/pipeline/) and [`notebooks/GCN4/pipeline_analysis/`](notebooks/GCN4/pipeline_analysis/). Most of the files needed to run the analysis are included in the data and output folders. The DuckDB files are too large for GitHub, so those can be found on Savio at `/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/duckdb`; you'll need access to Savio to work with those. See the [trebl_tools docs](https://trebl-tools.readthedocs.io/en/latest/index.html) for the most up to date details on installing and using the package.
 
+### Gitignored files on Savio
+Any repo path ignored by `.gitignore` is stored in the shared Savio project directory at:
+`/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL`
+
+Ignored paths in this repo (relative to this repository root):
+
+```text
+.DS_Store
+**/.ipynb_checkpoints/
+duckdb/
+from_EC/
+logs/
+notebooks/NKX2-2/error_corrected/
+notebooks/GCN4/error_corrected/
+data/*
+data/ChopTF/*
+data/ChopTF/TREBL_ChopTF_AD_fastp/*
+data/ChopTF/TREBL_ChopTF_AD_fastp/logs/*
+data/ChopTF/TREBL_ChopTF_RP_fastp/*
+data/ChopTF/TREBL_ChopTF_RP_fastp/logs/*
+data/ChopTFs_sanborn/*
+output/*
+output/ChopTFs_pipeline/downsampling/
+output/ChopTFs_pipeline/trebl_experiment_/
+output/ChopTFs_pipeline/time_normalization/DBD_time_normalized_activities_bootstrapped*
+output/GCN4_pipeline/downsampling/
+output/GCN4_pipeline/speed/NARDINI/
+output/GCN4_pipeline/speed/NARDINI_retry/
+output/GCN4_pipeline/time_normalization/
+output/GCN4_pipeline/trebl_experiment_pool_C_umi_/
+```
+
+Note: some files under `data/` and `output/` are intentionally re-included in Git and therefore are available in this repository.
+
 ### On Savio
 The `trebl_tools` conda environment is already installed in the shared project directory. Activate it and register the Jupyter kernel once before running any notebooks.
 
