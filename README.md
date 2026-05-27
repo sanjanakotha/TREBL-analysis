@@ -6,8 +6,39 @@ Analysis pipelines and notebooks for TREBL.
 
 Clone this repo. The main analysis notebooks are in [`notebooks/ChopTFs/pipeline/`](notebooks/ChopTFs/pipeline/) and [`notebooks/GCN4/pipeline_analysis/`](notebooks/GCN4/pipeline_analysis/). Most of the files needed to run the analysis are included in the data and output folders. The DuckDB files are too large for GitHub, so those can be found on Savio at `/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/duckdb`; you'll need access to Savio to work with those. See the [trebl_tools docs](https://trebl-tools.readthedocs.io/en/latest/index.html) for the most up to date details on installing and using the package.
 
+### On Savio
+The `trebl_tools` conda environment is already installed in the shared project directory. Activate it and register the Jupyter kernel once before running any notebooks.
+
+```bash
+conda activate /global/scratch/projects/fc_mvslab/conda/trebl_tools
+
+# register Jupyter kernel (run once)
+python -m ipykernel install --user --name trebl_tools_shared --display-name "trebl_tools (shared)"
+```
+
+### Locally
+Install `trebl_tools` from the latest release by cloning the repo, creating the conda environment from the provided YAML, and installing the package.
+
+```bash
+# clone the latest release
+git clone --branch v0.1.5 --depth 1 https://github.com/staller-lab/trebl_tools.git
+cd trebl_tools
+
+# create and activate conda env
+conda env create -f trebl_tools_env.yaml
+conda activate trebl_tools_env
+
+# install the package
+pip install .
+
+# register Jupyter kernel
+python -m ipykernel install --user --name trebl_tools_env --display-name "trebl_tools (v0.1.5)"
+```
+
+---
+
 ### Gitignored files on Savio
-Any repo path ignored by `.gitignore` is stored in the shared Savio project directory at:
+I've attempted to include all data necessary to run the notebooks in the repository. However, some files were too large and can only be found on savio. The following files can be found on Savio at:
 `/global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL`
 
 Ignored paths in this repo (relative to this repository root):
@@ -36,37 +67,6 @@ output/GCN4_pipeline/speed/NARDINI/
 output/GCN4_pipeline/speed/NARDINI_retry/
 output/GCN4_pipeline/time_normalization/
 output/GCN4_pipeline/trebl_experiment_pool_C_umi_/
-```
-
-Note: some files under `data/` and `output/` are intentionally re-included in Git and therefore are available in this repository.
-
-### On Savio
-The `trebl_tools` conda environment is already installed in the shared project directory. Activate it and register the Jupyter kernel once before running any notebooks.
-
-```bash
-conda activate /global/scratch/projects/fc_mvslab/conda/trebl_tools
-
-# register Jupyter kernel (run once)
-python -m ipykernel install --user --name trebl_tools_shared --display-name "trebl_tools (shared)"
-```
-
-### Locally
-Install `trebl_tools` from the latest release by cloning the repo, creating the conda environment from the provided YAML, and installing the package.
-
-```bash
-# clone the latest release
-git clone --branch v0.1.5 --depth 1 https://github.com/staller-lab/trebl_tools.git
-cd trebl_tools
-
-# create and activate conda env
-conda env create -f trebl_tools_env.yaml
-conda activate trebl_tools_env
-
-# install the package
-pip install .
-
-# register Jupyter kernel
-python -m ipykernel install --user --name trebl_tools_env --display-name "trebl_tools (v0.1.5)"
 ```
 
 ---
