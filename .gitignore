@@ -56,6 +56,7 @@ output/ChopTFs_pipeline/AD_trebl_experiment_results.csv
 output/ChopTFs_pipeline/RPTR_BC_trebl_experiment_results.csv
 output/ChopTFs_pipeline/RT_trebl_experiment_results.csv
 output/ChopTFs_pipeline/trebl_experiment_activities_per_barcode.csv
+output/ChopTFs_pipeline/README.md
 !output/ChopTFs_pipeline_step1_empty_ADs
 
 !output/GCN4_pipeline/
