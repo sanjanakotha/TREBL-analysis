@@ -10,23 +10,27 @@ The primary output to use is:
 
     /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/ChopTFs_pipeline/time_normalization/DBD_time_normalized_activities_bootstrapped_error_and_no_CIs.csv
 
-This file contains time-normalized, bootstrapped activity estimates for each AD sequence at each
-time point. Key columns:
+This file contains time-normalized, bootstrapped activity measurements for each AD sequence
+at each time point. Key columns:
 
-| Column   | Description                                                        |
-|----------|--------------------------------------------------------------------|
-| `ADseq`  | AD sequence identifier                                             |
-| `time`   | Time point                                                         |
-| `mean`   | Mean activity across all bootstraps                                |
-| `ci_low` | Lower bound of the confidence interval                             |
-| `ci_hi`  | Upper bound of the confidence interval                             |
+| Column    | Description                                          |
+|-----------|------------------------------------------------------|
+| `ADseq`   | AD sequence identifier                               |
+| `time`    | Time point                                           |
+| `mean`    | Mean activity across all bootstraps                  |
+| `ci_low`  | Lower bound of the confidence interval               |
+| `ci_hi`   | Upper bound of the confidence interval               |
 
-> **Note:** Rows missing `ci_low` / `ci_hi` lacked sufficient barcodes to bootstrap and are
+> **Note:** Rows with no `ci_low` / `ci_hi` lacked sufficient data to bootstrap and are
 > lower confidence.
 
-For activity classifications (activator / repressor / ns) and p-values, see:
+For classification of tiles as activators, repressors, or not significant, see:
 
     /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/ChopTFs_pipeline/time_normalization/DBD_time_normalized_activities_bootstrapped_error_active_pval.csv
+
+For final speed and strength fits, see:
+
+    /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/ChopTFs_pipeline/speed/exponential_fit.csv
 
 ---
 
@@ -41,6 +45,7 @@ For activity classifications (activator / repressor / ns) and p-values, see:
 7. [Time-Normalized Summaries](#time-normalized-summaries)
 8. [Error Propagation and Bootstrapping](#error-propagation-and-bootstrapping)
 9. [Final Data](#final-data)
+10. [Speed Fits](#speed-fits)
 
 ---
 
@@ -203,13 +208,78 @@ Includes data even for ADseqs without sufficient barcodes to bootstrap (lower co
 
 ### Columns
 
-| Column   | Description                                                                     |
-|----------|---------------------------------------------------------------------------------|
-| `ADseq`  | AD sequence identifier                                                          |
-| `time`   | Time point                                                                      |
-| `mean`   | Mean activity across all bootstraps                                             |
-| `ci_low` | Lower bound of the confidence interval                                          |
-| `ci_hi`  | Upper bound of the confidence interval                                          |
+| Column    | Description                                                              |
+|-----------|--------------------------------------------------------------------------|
+| `ADseq`   | AD sequence identifier                                                   |
+| `time`    | Time point                                                               |
+| `mean`    | Mean activity across all bootstraps                                      |
+| `ci_low`  | Lower bound of the confidence interval                                   |
+| `ci_hi`   | Upper bound of the confidence interval                                   |
 
 > **Note:** Rows with no `ci_low` / `ci_hi` did not have sufficient data points to bootstrap.
 > These rows are lower confidence.
+
+---
+
+## Speed Fits
+
+Base directory:
+
+    /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/ChopTFs_pipeline/speed/
+
+### Input and Aggregated Metrics
+
+| File                  | Description                                                                          |
+|-----------------------|--------------------------------------------------------------------------------------|
+| `activities_to_fit.csv` | Subset of activities to which kinetic curves are fit                               |
+| `aggreg_per_TF.csv`   | Speed metrics aggregated per TF. `Coverage_fraction` is the proportion of the TF covered by at least 1 tile |
+| `fast_genes.txt`      | Gene IDs used as the "fast" set for GO analysis                                      |
+| `background.txt`      | Background gene IDs used for GO analysis                                             |
+
+### Baseline-Normalized Model Fits
+
+Curves all normalized to zero at t = 0.
+
+    /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/ChopTFs_pipeline/speed/exponential_fit_baseline_norm.csv
+    /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/ChopTFs_pipeline/speed/hill_fit_baseline_norm.csv
+    /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/ChopTFs_pipeline/speed/logistic_fit_baseline_norm.csv
+
+### First Passage Time
+
+| File                         | Description                                                                               |
+|------------------------------|-------------------------------------------------------------------------------------------|
+| `first_passage_DBD.csv`      | Uses the DBD distribution to determine when tiles first become active                     |
+| `first_passage_pval_class.csv` | Uses bootstrapped differences from t=0 to determine when tiles first become active      |
+
+### Model Fit Comparison
+
+    /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/ChopTFs_pipeline/speed/merged_speed_summary.csv
+
+Comparison of the baseline-normalized and first passage time approaches above.
+
+### Final Speed and Strength Fits (use this)
+
+    /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/ChopTFs_pipeline/speed/exponential_fit.csv
+
+Fits kinetic curves of the form `f(t) = A * (1 - e^(-kt)) + C`.
+
+| Column      | Description                                                               |
+|-------------|---------------------------------------------------------------------------|
+| `A`         | Amplitude parameter of the exponential curve                             |
+| `k`         | Rate constant — used as the **speed** metric                             |
+| `C`         | Offset parameter of the exponential curve                                |
+| `A+C`       | Amplitude + offset — used as the **strength** metric                     |
+| `R_squared` | Model performance relative to the data                                   |
+| `flag`      | Whether the data passed the quality check                                |
+
+### PARROT Models
+
+    /global/scratch/projects/fc_mvslab/OpenProjects/Sanjana/TREBL/output/ChopTFs_pipeline/speed/PARROT/
+
+Models are named by their input metric:
+
+| Model name                    | Speed/strength definition used as input |
+|-------------------------------|-----------------------------------------|
+| `exponential_speed_input`     | Uses `A * k` as speed                  |
+| `exponential_strength_input`  | Uses `A + C` as strength               |
+| `exponential_speed_k`         | Uses `k` as speed                      |
